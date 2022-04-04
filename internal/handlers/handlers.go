@@ -19,17 +19,18 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		// Check header
 		/*
-			if r.Method != http.MethodPost {
-				http.Error(rw, "status method is not allowed", http.StatusMethodNotAllowed)
+				if r.Method != http.MethodPost {
+					http.Error(rw, "status method is not allowed", http.StatusMethodNotAllowed)
+					return
+				}
+
+
+			headerContentType := r.Header.Get("Content-Type")
+			if headerContentType != "text/plain" {
+				http.Error(rw, "Unsupported Media Type", 415)
 				return
 			}
 		*/
-
-		headerContentType := r.Header.Get("Content-Type")
-		if headerContentType != "text/plain" {
-			http.Error(rw, "Unsupported Media Type", 415)
-			return
-		}
 
 		// Parse URL
 		metricURL := r.URL
