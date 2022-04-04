@@ -66,6 +66,18 @@ func TestUpdateMetricHandler(t *testing.T) {
 				response: "",
 			},
 		},
+		{
+			name: "test 4",
+			sendParam: sendParam{
+				httpMethod:  http.MethodPost,
+				request:     "/update/gauge",
+				contentType: "text/plain",
+			},
+			want: want{
+				code:     404,
+				response: "",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -80,6 +92,7 @@ func TestUpdateMetricHandler(t *testing.T) {
 			result := w.Result()
 
 			assert.Equal(t, result.StatusCode, tt.want.code)
+			// fmt.Println(result) // Debug
 		})
 	}
 }

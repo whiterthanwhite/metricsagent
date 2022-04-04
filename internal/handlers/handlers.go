@@ -31,7 +31,13 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 
 		// Parse URL
 		metricURL := r.URL
-		m, ok := parseMetricURI(metricURL.RequestURI())
+		metricURIValues := strings.Split(metricURL.RequestURI(), "/")
+		if len(metricURIValues) < 4 {
+			http.Error(rw, "", http.StatusNotFound)
+			return
+		}
+
+		m, ok := getMetricFromValues(metricURIValues)
 		if !ok && m == nil {
 			http.Error(rw, "Metric wont't found", http.StatusBadRequest)
 			return
@@ -44,11 +50,9 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 	}
 }
 
-func parseMetricURI(metricURI string) (metrics.Metric, bool) {
-	var metricURIValues []string = strings.Split(metricURI, "/")
-	// var metricType string = metricURIValues[2]
-	var metricName string = metricURIValues[3]
-	var metricValue string = metricURIValues[4]
+func getMetricFromValues(sendedValues []string) (metrics.Metric, bool) {
+	var metricName string = sendedValues[3]
+	var metricValue string = sendedValues[4]
 
 	// debug >>
 	if len(addedMetrics) == 0 {
