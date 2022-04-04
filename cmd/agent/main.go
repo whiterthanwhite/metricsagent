@@ -1,26 +1,28 @@
 package main
 
 import (
-	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
 	"fmt"
+
+	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
+
 	// "math/rand"
-	"time"
+	"io"
+	"log"
 	"net/http"
 	"net/url"
-	"log"
 	"strings"
-	"io"
+	"time"
 )
 
 const (
-	pollInterval = 2
+	pollInterval   = 2
 	reportInterval = 10
-	adress = "127.0.0.1"
-	port = "8080"
+	adress         = "127.0.0.1"
+	port           = "8080"
 )
 
-func getMetricUrl(metricName string, metricType string) *url.URL {
-	urlString := getMetricUrlString(metricName, metricType)
+func getMetricUrl(m metrics.Metric) *url.URL {
+	urlString := getMetricUrlString(m)
 	urlMetric, err := url.Parse(urlString)
 	if err != nil {
 		log.Fatal(err)
@@ -28,59 +30,38 @@ func getMetricUrl(metricName string, metricType string) *url.URL {
 	return urlMetric
 }
 
-func getMetricUrlString(metricName string, metricType string) string {
-	var metricValue float64 = 0.0
+func getMetricUrlString(m metrics.Metric) string {
+	var metricValue float64 = m.GetValue().(float64)
 	var stringUrl string = fmt.Sprintf("http://%s:%s/update/%s/%s/%g",
 		adress,
 		port,
-		metricType,
-		metricName,
+		m.GetTypeName(),
+		m.GetName(),
 		metricValue)
 	return stringUrl
 }
 
 func main() {
 	httpClient := http.Client{}
-	metricsMap := metrics.GetAllMetrics()	
+	addedMetrics := metrics.GetAllMetrics()
 	pollTicker := time.NewTicker(pollInterval * time.Second)
 	reportTicker := time.NewTicker(reportInterval * time.Second)
 	for {
 		select {
 		case <-pollTicker.C:
-			for metricName := range metricsMap {
-				metrics.UpdateMetric(metricName, 1)
+			for _, m := range addedMetrics {
+				m.UpdateValue(25.0)
 			}
-			fmt.Println("Updated")
 		case <-reportTicker.C:
-			for metricName := range metricsMap {
-				urlMetric := getMetricUrl(metricName, "gauge")	
-				httpClient.Post(urlMetric.String(),
-					"text/plain",
+			for _, m := range addedMetrics {
+				urlMetric := getMetricUrl(m)
+				resp, err := httpClient.Post(urlMetric.String(), "text/plain",
 					io.LimitReader(strings.NewReader(""), 0))
-				fmt.Println(urlMetric.String())
+				if err != nil {
+					log.Fatal(err)
+				}
+				fmt.Println(resp.Status, resp.Header.Get("Content-Type"))
 			}
 		}
 	}
-	
-	/*
-	updateTicker := time.NewTicker(pollInterval * time.Second)
-	for {
-		updateTime := <-updateTicker.C
-		fmt.Println("updateTime", updateTime.String())
-		url, err := url.Parse(stringUrl)
-		if err != nil {
-			log.Fatal(err)
-		} 
-		request, err := http.NewRequest(http.MethodPost, url.String(), nil)
-		if err != nil {
-			log.Fatal(err)	
-		}
-		request.Header.Set("Content-Type", "text/plain")
-	}
-	reportTicker = time.NewTicker(reportInterval * time.Second)
-	for {
-		reportTime := <-reportTicker.C
-		fmt.Println("reportTime", reportTime.String())
-	}
-	*/
 }

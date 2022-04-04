@@ -17,9 +17,16 @@ cmd/agent/agent
 cmd/server/main
 cmd/server/server
 
+# My test repositores
+cmd/newagent/*
+internal/runtime/newmetrics/*
+
 # Dependency directories (remove the comment below to include it)
 vendor/
 
 # IDEs directories
 .idea
 .vscode
+
+# Helper files
+*.csv
