@@ -238,8 +238,37 @@ func GetAllMetrics() map[string]Metric {
 	return metrics
 }
 
-func GetMetric(name string) Metric {
-	return metrics[name]
+func GetMetric(name string, mType string) Metric {
+	m, ok := metrics[name]
+	if !ok {
+		mt := metrictype(mType)
+		m = createMetric(name, mt)
+	}
+	return m
+}
+
+func createMetric(name string, kind metrictype) Metric {
+	switch kind {
+	case GaugeType:
+		return &GaugeMetric{
+			Name:     name,
+			TypeName: kind,
+		}
+	case CounterType:
+		return &CounterMetric{
+			Name:     name,
+			TypeName: kind,
+		}
+	}
+	return nil
+}
+
+func IsMetricTypeExist(mType string) bool {
+	switch metrictype(mType) {
+	case GaugeType, CounterType:
+		return true
+	}
+	return false
 }
 
 func ParseCSVString(csvStr string) Metric {

@@ -32,8 +32,14 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 		// Parse URL
 		metricURL := r.URL
 		metricURIValues := strings.Split(metricURL.RequestURI(), "/")
-		if len(metricURIValues) < 4 {
+		if len(metricURIValues) < 5 {
 			http.Error(rw, "", http.StatusNotFound)
+			return
+		}
+
+		mType := metricURIValues[2]
+		if !metrics.IsMetricTypeExist(mType) {
+			http.Error(rw, "", http.StatusNotImplemented)
 			return
 		}
 
@@ -51,8 +57,9 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 }
 
 func getMetricFromValues(sendedValues []string) (metrics.Metric, bool) {
-	var metricName string = sendedValues[3]
-	var metricValue string = sendedValues[4]
+	mType := sendedValues[2]
+	metricName := sendedValues[3]
+	metricValue := sendedValues[4]
 
 	// debug >>
 	if len(addedMetrics) == 0 {
@@ -61,13 +68,13 @@ func getMetricFromValues(sendedValues []string) (metrics.Metric, bool) {
 	// debug <<
 	m, ok := addedMetrics[metricName]
 	if !ok {
-		addedMetrics[metricName] = metrics.GetMetric(metricName)
-		m = addedMetrics[metricName]
+		m = metrics.GetMetric(metricName, mType)
+		addedMetrics[metricName] = m
 	}
 
 	value, err := strconv.ParseFloat(metricValue, 64)
 	if err != nil {
-		fmt.Println("Connot update metric value")
+		fmt.Println("Cannot update metric value")
 		return nil, false
 	}
 	m.UpdateValue(value)

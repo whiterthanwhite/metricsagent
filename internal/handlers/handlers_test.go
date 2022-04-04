@@ -43,18 +43,6 @@ func TestUpdateMetricHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "test 2",
-			sendParam: sendParam{
-				httpMethod:  http.MethodGet,
-				request:     "/update/gauge/Alloc/0",
-				contentType: "text/plain",
-			},
-			want: want{
-				code:     405,
-				response: "",
-			},
-		},
-		{
 			name: "test 3",
 			sendParam: sendParam{
 				httpMethod:  http.MethodPost,
@@ -78,6 +66,90 @@ func TestUpdateMetricHandler(t *testing.T) {
 				response: "",
 			},
 		},
+		{
+			name: "test 5",
+			sendParam: sendParam{
+				httpMethod:  http.MethodPost,
+				request:     "/update/counter/testCounter/100",
+				contentType: "text/plain",
+			},
+			want: want{
+				code:     200,
+				response: "",
+			},
+		},
+		{
+			name: "test 6",
+			sendParam: sendParam{
+				httpMethod:  http.MethodPost,
+				request:     "/update/counter/",
+				contentType: "text/plain",
+			},
+			want: want{
+				code:     404,
+				response: "",
+			},
+		},
+		{
+			name: "test 7",
+			sendParam: sendParam{
+				httpMethod:  http.MethodPost,
+				request:     "/update/counter/testCounter/none",
+				contentType: "text/plain",
+			},
+			want: want{
+				code:     400,
+				response: "",
+			},
+		},
+		{
+			name: "test 8",
+			sendParam: sendParam{
+				httpMethod:  http.MethodPost,
+				request:     "/update/gauge/testGauge/100",
+				contentType: "text/plain",
+			},
+			want: want{
+				code:     200,
+				response: "",
+			},
+		},
+		{
+			name: "test 9",
+			sendParam: sendParam{
+				httpMethod:  http.MethodPost,
+				request:     "/update/gauge/",
+				contentType: "text/plain",
+			},
+			want: want{
+				code:     404,
+				response: "",
+			},
+		},
+		{
+			name: "test 10",
+			sendParam: sendParam{
+				httpMethod:  http.MethodPost,
+				request:     "/update/gauge/testGauge/none",
+				contentType: "text/plain",
+			},
+			want: want{
+				code:     400,
+				response: "",
+			},
+		},
+		{
+			name: "test 11",
+			sendParam: sendParam{
+				httpMethod:  http.MethodPost,
+				request:     "/update/unknown/testCounter/100",
+				contentType: "text/plain",
+			},
+			want: want{
+				code:     501,
+				response: "",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -91,8 +163,7 @@ func TestUpdateMetricHandler(t *testing.T) {
 			h.ServeHTTP(w, request)
 			result := w.Result()
 
-			assert.Equal(t, result.StatusCode, tt.want.code)
-			// fmt.Println(result) // Debug
+			assert.Equal(t, tt.want.code, result.StatusCode)
 		})
 	}
 }
