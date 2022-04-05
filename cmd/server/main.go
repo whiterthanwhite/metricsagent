@@ -20,11 +20,14 @@ func main() {
 	if len(addedMetrics) == 0 {
 		addedMetrics = metrics.GetAllMetrics()
 	}
+	handlers.SetMetrics(addedMetrics)
 
 	r := chi.NewRouter()
 	r.Route("/", func(r chi.Router) {
 		r.Post("/update/{metricType}/{metricName}/{metricValue}",
 			handlers.UpdateMetricHandler(metricFile))
+		r.Get("/value/{metricType}/{metricName}",
+			handlers.GetMetricValueFromServer(metricFile))
 	})
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

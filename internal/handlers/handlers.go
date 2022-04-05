@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
 	"github.com/whiterthanwhite/metricsagent/internal/storage"
 )
@@ -17,34 +17,14 @@ var (
 
 func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		// Check header
-		/*
-				if r.Method != http.MethodPost {
-					http.Error(rw, "status method is not allowed", http.StatusMethodNotAllowed)
-					return
-				}
+		mName := chi.URLParam(r, "metricName")
+		mType := chi.URLParam(r, "metricType")
+		mValue := chi.URLParam(r, "metricValue")
 
-
-			headerContentType := r.Header.Get("Content-Type")
-			if headerContentType != "text/plain" {
-				http.Error(rw, "Unsupported Media Type", 415)
-				return
-			}
-		*/
-
-		// Parse URL
-		metricURL := r.URL
-		metricURIValues := strings.Split(metricURL.RequestURI(), "/")
-		if len(metricURIValues) < 5 {
-			http.Error(rw, "", http.StatusNotFound)
-			return
-		}
-
-		mType := metricURIValues[2]
-		if !metrics.IsMetricTypeExist(mType) {
-			http.Error(rw, "", http.StatusNotImplemented)
-			return
-		}
+		metricURIValues := make([]string, 0)
+		metricURIValues = append(metricURIValues, mType)
+		metricURIValues = append(metricURIValues, mName)
+		metricURIValues = append(metricURIValues, mValue)
 
 		m, ok := getMetricFromValues(metricURIValues)
 		if !ok && m == nil {
@@ -59,10 +39,36 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 	}
 }
 
+func GetMetricValueFromServer(f *os.File) http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		mType := chi.URLParam(r, "metricType")
+		mName := chi.URLParam(r, "metricName")
+
+		metricURIValues := make([]string, 0)
+		metricURIValues = append(metricURIValues, mType)
+		metricURIValues = append(metricURIValues, mName)
+
+		m, ok := addedMetrics[mName]
+		if !ok {
+			http.Error(rw, "Metric wasn't found", http.StatusNotFound)
+			return
+		}
+
+		mValue := m.GetValue()
+		switch mValue.(type) {
+		case float64:
+			rw.Write([]byte(fmt.Sprintf("%v", mValue.(float64))))
+		case int64:
+			rw.Write([]byte(fmt.Sprintf("%v", mValue.(int64))))
+		}
+		rw.WriteHeader(http.StatusOK)
+	}
+}
+
 func getMetricFromValues(sendedValues []string) (metrics.Metric, bool) {
-	mType := sendedValues[2]
-	metricName := sendedValues[3]
-	metricValue := sendedValues[4]
+	mType := sendedValues[0]
+	metricName := sendedValues[1]
+	metricValue := sendedValues[2]
 
 	// debug >>
 	if len(addedMetrics) == 0 {
