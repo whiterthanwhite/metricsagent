@@ -20,6 +20,6 @@ func main() {
 		addedMetrics = metrics.GetAllMetrics()
 	}
 
-	http.HandleFunc("/update", handlers.UpdateMetricHandler(metricFile))
+	http.HandleFunc("/update/", handlers.UpdateMetricHandler(metricFile))
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
