@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/whiterthanwhite/metricsagent/internal/handlers"
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
 	"github.com/whiterthanwhite/metricsagent/internal/storage"
@@ -20,6 +21,7 @@ func main() {
 		addedMetrics = metrics.GetAllMetrics()
 	}
 
-	http.HandleFunc("/update/", handlers.UpdateMetricHandler(metricFile))
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	r := chi.NewRouter()
+	r.Get("/update/", handlers.UpdateMetricHandler(metricFile))
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
