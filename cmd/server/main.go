@@ -23,5 +23,7 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Post("/update", handlers.UpdateMetricHandler(metricFile))
-	log.Fatal(http.ListenAndServe(":8080", r))
+
+	http.HandleFunc("/update", handlers.UpdateMetricHandler(metricFile))
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
