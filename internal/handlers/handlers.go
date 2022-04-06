@@ -91,6 +91,18 @@ func GetMetricValueFromServer(f *os.File) http.HandlerFunc {
 	}
 }
 
+func GetAllMetricsFromFile() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		for _, m := range addedMetrics {
+			rw.Write([]byte("<html>\n<body>"))
+			rw.Write([]byte(fmt.Sprintf("<p>Name: %v; Value: %v</p><br>",
+				m.GetName(), m.GetValue())))
+			rw.Write([]byte("</body>\n</html>"))
+		}
+		rw.WriteHeader(http.StatusOK)
+	}
+}
+
 func getMetricFromValues(sendedValues []string) (metrics.Metric, bool) {
 	mType := sendedValues[0]
 	metricName := sendedValues[1]

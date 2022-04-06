@@ -23,13 +23,17 @@ func main() {
 	handlers.SetMetrics(addedMetrics)
 
 	r := chi.NewRouter()
-	r.Route("/update", func(r chi.Router) {
-		r.Post("/{metricType}/{metricName}/{metricValue}",
-			handlers.UpdateMetricHandler(metricFile))
-	})
-	r.Route("/value", func(r chi.Router) {
-		r.Get("/{metricType}/{metricName}",
-			handlers.GetMetricValueFromServer(metricFile))
+
+	r.Route("/", func(r chi.Router) {
+		r.Get("/", handlers.GetAllMetricsFromFile())
+		r.Route("/update", func(r chi.Router) {
+			r.Post("/{metricType}/{metricName}/{metricValue}",
+				handlers.UpdateMetricHandler(metricFile))
+		})
+		r.Route("/value", func(r chi.Router) {
+			r.Get("/{metricType}/{metricName}",
+				handlers.GetMetricValueFromServer(metricFile))
+		})
 	})
 
 	log.Fatal(http.ListenAndServe(":8080", r))
