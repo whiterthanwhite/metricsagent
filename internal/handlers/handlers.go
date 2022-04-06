@@ -38,12 +38,22 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 			return
 		}
 
-		value, err := strconv.ParseFloat(mValue, 64)
-		if err != nil {
-			http.Error(rw, "", http.StatusBadRequest)
-			return
+		switch m.GetTypeName() {
+		case metrics.CounterType:
+			value, err := strconv.ParseInt(mValue, 0, 64)
+			if err != nil {
+				http.Error(rw, "", http.StatusBadRequest)
+				return
+			}
+			m.UpdateValue(value)
+		case metrics.GaugeType:
+			value, err := strconv.ParseFloat(mValue, 64)
+			if err != nil {
+				http.Error(rw, "", http.StatusBadRequest)
+				return
+			}
+			m.UpdateValue(value)
 		}
-		m.UpdateValue(value)
 
 		addedMetrics[m.GetName()] = m
 		storage.WriteMetricsToFile(f, addedMetrics)
@@ -69,11 +79,13 @@ func GetMetricValueFromServer(f *os.File) http.HandlerFunc {
 		}
 
 		mValue := m.GetValue()
-		switch mValue.(type) {
-		case float64:
-			rw.Write([]byte(fmt.Sprintf("%v", mValue.(float64))))
-		case int64:
-			rw.Write([]byte(fmt.Sprintf("%v", mValue.(int64))))
+		switch v := mValue.(type) {
+		/* case metrics.GaugeMetric:
+			rw.Write([]byte(fmt.Sprintf("%v", v)))
+		case metrics.CounterMetric:
+			rw.Write([]byte(fmt.Sprintf("%v", v))) */
+		default:
+			rw.Write([]byte(fmt.Sprintf("%v", v)))
 		}
 		rw.WriteHeader(http.StatusOK)
 	}
