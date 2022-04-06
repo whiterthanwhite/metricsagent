@@ -28,7 +28,6 @@ func WriteMetricsToFile(f *os.File, cMetrics map[string]metrics.Metric) {
 			log.Fatal(err)
 		}
 		skip += z
-		fmt.Println(a, skip)
 	}
 }
 
