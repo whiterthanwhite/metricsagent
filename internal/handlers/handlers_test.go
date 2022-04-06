@@ -4,46 +4,50 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/whiterthanwhite/metricsagent/internal/storage"
 )
 
 func TestGetMetricValueFromServer(t *testing.T) {
-	var f *os.File = storage.OpenMetricFileCSV()
-	f.Close()
-
 	r := chi.NewRouter()
 	ts := httptest.NewServer(r)
 	ts.URL = "http://127.0.0.1:8080"
 
 	defer ts.Close()
 
-	resp, body := testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/unknown/testCounter/100")
-	assert.Equal(t, http.StatusNotImplemented, resp.StatusCode)
-	// assert.Equal(t, "", body)
+	var resp *http.Response
+	var body string
 
-	resp, body = testGetMetricValueFromServer(t, ts, http.MethodGet, "/value/counter/testSetGet33")
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
-	// assert.Equal(t, "", body)
-
-	resp, _ = testGetMetricValueFromServer(t, ts, http.MethodGet, "/value/counter/testUnknown15")
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
-	// assert.Equal(t, "404 page not found", body)
-
-	resp, _ = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/gauge/testSetGet199/437714.187")
+	/* resp, body = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testCounter/100")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	// assert.Equal(t, "404 page not found", body)
+	assert.Equal(t, "", body)
 
-	resp, body = testGetMetricValueFromServer(t, ts, http.MethodGet, "/value/gauge/testSetGet199")
+	resp, body = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testCounter/none")
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	assert.Equal(t, "", body)
+
+	resp, body = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/gauge/testGauge/100")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "437714.187", body)
+	assert.Equal(t, "", body) */
 
-	os.Remove(f.Name())
+	resp, body = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/527")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	resp, body = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/455")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	resp, body = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/187")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	resp, body = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/gauge/testSetGet134/65637.019")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	resp, body = testGetMetricValueFromServer(t, ts, http.MethodGet, "/value/gauge/testSetGet134")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "65637.019", body)
 }
 
 func testGetMetricValueFromServer(t *testing.T, ts *httptest.Server, method, path string) (*http.Response, string) {

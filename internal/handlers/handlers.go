@@ -22,12 +22,7 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 		mType := chi.URLParam(r, "metricType")
 		mValue := chi.URLParam(r, "metricValue")
 
-		if strings.Compare(mType, "gauge") != 0 {
-			http.Error(rw, "", http.StatusNotImplemented)
-			return
-		}
-
-		if strings.Compare(mType, "counter") != 0 {
+		if strings.Compare(mType, "gauge") != 0 && strings.Compare(mType, "counter") != 0 {
 			http.Error(rw, "", http.StatusNotImplemented)
 			return
 		}
@@ -42,6 +37,14 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 			http.Error(rw, "Metric wont't found", http.StatusBadRequest)
 			return
 		}
+
+		value, err := strconv.ParseFloat(mValue, 64)
+		if err != nil {
+			http.Error(rw, "", http.StatusBadRequest)
+			return
+		}
+		m.UpdateValue(value)
+
 		addedMetrics[m.GetName()] = m
 		storage.WriteMetricsToFile(f, addedMetrics)
 
@@ -79,7 +82,6 @@ func GetMetricValueFromServer(f *os.File) http.HandlerFunc {
 func getMetricFromValues(sendedValues []string) (metrics.Metric, bool) {
 	mType := sendedValues[0]
 	metricName := sendedValues[1]
-	metricValue := sendedValues[2]
 
 	// debug >>
 	if len(addedMetrics) == 0 {
@@ -91,13 +93,6 @@ func getMetricFromValues(sendedValues []string) (metrics.Metric, bool) {
 		m = metrics.GetMetric(metricName, mType)
 		addedMetrics[metricName] = m
 	}
-
-	value, err := strconv.ParseFloat(metricValue, 64)
-	if err != nil {
-		fmt.Println("Cannot update metric value")
-		return nil, false
-	}
-	m.UpdateValue(value)
 
 	return m, true
 }

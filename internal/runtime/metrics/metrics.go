@@ -285,6 +285,17 @@ func ParseCSVString(csvStr string) Metric {
 			TypeName: mt,
 			Value:    gauge(tempFloat),
 		}
+	case CounterType:
+		tempInt, err := strconv.ParseInt(metricValues[2], 0, 64)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return &CounterMetric{
+			Name:     metricValues[1],
+			TypeName: mt,
+			Value:    counter(tempInt),
+		}
 	}
+
 	return nil
 }

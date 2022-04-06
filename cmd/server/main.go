@@ -28,7 +28,7 @@ func main() {
 			handlers.UpdateMetricHandler(metricFile))
 	})
 	r.Route("/value", func(r chi.Router) {
-		r.Get("/value/{metricType}/{metricName}",
+		r.Get("/{metricType}/{metricName}",
 			handlers.GetMetricValueFromServer(metricFile))
 	})
 
