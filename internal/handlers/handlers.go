@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
+
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
 	"github.com/whiterthanwhite/metricsagent/internal/storage"
 )
@@ -22,7 +22,9 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 		mType := chi.URLParam(r, "metricType")
 		mValue := chi.URLParam(r, "metricValue")
 
-		if strings.Compare(mType, "gauge") != 0 && strings.Compare(mType, "counter") != 0 {
+		switch mType {
+		case "gauge", "counter":
+		default:
 			http.Error(rw, "", http.StatusNotImplemented)
 			return
 		}
