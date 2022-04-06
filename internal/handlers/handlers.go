@@ -18,7 +18,6 @@ var (
 
 func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		return // funny debug
 		mName := chi.URLParam(r, "metricName")
 		mType := chi.URLParam(r, "metricType")
 		mValue := chi.URLParam(r, "metricValue")
