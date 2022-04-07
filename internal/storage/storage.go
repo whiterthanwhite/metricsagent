@@ -18,7 +18,10 @@ func OpenMetricFileCSV() *os.File {
 }
 
 func WriteMetricsToFile(f *os.File, cMetrics map[string]metrics.Metric) {
-	f.Truncate(0)
+	err := f.Truncate(0)
+	if err != nil {
+		log.Fatal(err)
+	}
 	skip := 0
 	for _, cMetric := range cMetrics {
 		a := fmt.Sprintf("%v;%v;%v\n", cMetric.GetTypeName(),
@@ -43,7 +46,10 @@ func getMetricsFromFile(f *os.File, fi os.FileInfo) map[string]metrics.Metric {
 	fileMetrics := make(map[string]metrics.Metric)
 	fileBytes := make([]byte, fi.Size())
 
-	f.Read(fileBytes)
+	_, err := f.Read(fileBytes)
+	if err != nil {
+		log.Fatal(err)
+	}
 	fileText := string(fileBytes)
 	metricsStrings := strings.Split(fileText, "\n")
 	if len(metricsStrings) > 0 {

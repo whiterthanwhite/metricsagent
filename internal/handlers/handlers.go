@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -82,7 +83,7 @@ func GetMetricValueFromServer(f *os.File) http.HandlerFunc {
 		case metrics.CounterMetric:
 			rw.Write([]byte(fmt.Sprintf("%v", v))) */
 		default:
-			rw.Write([]byte(fmt.Sprintf("%v", v)))
+			responseWriterWriteCheck(rw, []byte(fmt.Sprintf("%v", v)))
 		}
 		rw.WriteHeader(http.StatusOK)
 	}
@@ -90,12 +91,13 @@ func GetMetricValueFromServer(f *os.File) http.HandlerFunc {
 
 func GetAllMetricsFromFile() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		responseWriterWriteCheck(rw, []byte("<html><body>"))
 		for _, m := range addedMetrics {
-			rw.Write([]byte("<html>\n<body>"))
-			rw.Write([]byte(fmt.Sprintf("<p>Name: %v; Value: %v</p><br>",
+			responseWriterWriteCheck(rw, []byte(fmt.Sprintf(
+				"<p>Name: %v; Value: %v</p><br>",
 				m.GetName(), m.GetValue())))
-			rw.Write([]byte("</body>\n</html>"))
 		}
+		responseWriterWriteCheck(rw, []byte("</body></html>"))
 		rw.WriteHeader(http.StatusOK)
 	}
 }
@@ -116,6 +118,13 @@ func getMetricFromValues(sendedValues []string) (metrics.Metric, bool) {
 	}
 
 	return m, true
+}
+
+func responseWriterWriteCheck(rw http.ResponseWriter, v []byte) {
+	_, err := rw.Write(v)
+	if err != nil {
+		log.Fatal()
+	}
 }
 
 func SetMetrics(metrics map[string]metrics.Metric) {
