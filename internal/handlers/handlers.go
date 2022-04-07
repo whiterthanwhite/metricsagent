@@ -76,6 +76,7 @@ func GetMetricValueFromServer(f *os.File) http.HandlerFunc {
 			return
 		}
 
+		rw.WriteHeader(http.StatusOK)
 		mValue := m.GetValue()
 		switch v := mValue.(type) {
 		/* case metrics.GaugeMetric:
@@ -85,7 +86,6 @@ func GetMetricValueFromServer(f *os.File) http.HandlerFunc {
 		default:
 			responseWriterWriteCheck(rw, []byte(fmt.Sprintf("%v", v)))
 		}
-		rw.WriteHeader(http.StatusOK)
 	}
 }
 
