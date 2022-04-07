@@ -25,4 +25,4 @@ vendor/
 .vscode
 
 # Helper files
-*.csv
+*.DS_store

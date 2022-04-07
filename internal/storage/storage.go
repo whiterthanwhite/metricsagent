@@ -10,7 +10,7 @@ import (
 )
 
 func OpenMetricFileCSV() *os.File {
-	f, err := os.OpenFile("tmp.csv", os.O_CREATE|os.O_RDWR, 0750)
+	f, err := os.OpenFile("tmp.DS_Store", os.O_CREATE|os.O_RDWR, 0750)
 	if err != nil {
 		log.Fatal(err)
 	}

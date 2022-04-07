@@ -2,16 +2,14 @@ package main
 
 import (
 	"fmt"
-
-	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
-
-	// "math/rand"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
 )
 
 const (
