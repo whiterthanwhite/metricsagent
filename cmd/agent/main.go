@@ -21,8 +21,8 @@ const (
 	port           = "8080"
 )
 
-func getMetricUrl(m metrics.Metric) *url.URL {
-	urlString := getMetricUrlString(m)
+func getMetricURL(m metrics.Metric) *url.URL {
+	urlString := getMetricURLString(m)
 	urlMetric, err := url.Parse(urlString)
 	if err != nil {
 		log.Fatal(err)
@@ -30,15 +30,15 @@ func getMetricUrl(m metrics.Metric) *url.URL {
 	return urlMetric
 }
 
-func getMetricUrlString(m metrics.Metric) string {
-	var metricValue float64 = m.GetValue().(float64)
-	var stringUrl string = fmt.Sprintf("http://%s:%s/update/%s/%s/%g",
+func getMetricURLString(m metrics.Metric) string {
+	metricValue := m.GetValue().(float64)
+	stringURL := fmt.Sprintf("http://%s:%s/update/%s/%s/%g",
 		adress,
 		port,
 		m.GetTypeName(),
 		m.GetName(),
 		metricValue)
-	return stringUrl
+	return stringURL
 }
 
 func main() {
@@ -54,13 +54,14 @@ func main() {
 			}
 		case <-reportTicker.C:
 			for _, m := range addedMetrics {
-				urlMetric := getMetricUrl(m)
+				urlMetric := getMetricURL(m)
 				resp, err := httpClient.Post(urlMetric.String(), "text/plain",
 					io.LimitReader(strings.NewReader(""), 0))
 				if err != nil {
 					log.Fatal(err)
 				}
 				fmt.Println(resp.Status, resp.Header.Get("Content-Type"))
+				resp.Body.Close()
 			}
 		}
 	}

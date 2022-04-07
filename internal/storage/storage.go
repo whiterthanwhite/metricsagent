@@ -19,7 +19,7 @@ func OpenMetricFileCSV() *os.File {
 
 func WriteMetricsToFile(f *os.File, cMetrics map[string]metrics.Metric) {
 	f.Truncate(0)
-	var skip int = 0
+	skip := 0
 	for _, cMetric := range cMetrics {
 		a := fmt.Sprintf("%v;%v;%v\n", cMetric.GetTypeName(),
 			cMetric.GetName(), cMetric.GetValue())

@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/go-chi/chi/v5"
 
@@ -13,7 +12,7 @@ import (
 )
 
 func main() {
-	var metricFile *os.File = storage.OpenMetricFileCSV()
+	metricFile := storage.OpenMetricFileCSV()
 	defer metricFile.Close()
 
 	// Set exist metrics or create empty

@@ -67,11 +67,9 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 
 func GetMetricValueFromServer(f *os.File) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		mType := chi.URLParam(r, "metricType")
 		mName := chi.URLParam(r, "metricName")
 
 		metricURIValues := make([]string, 0)
-		metricURIValues = append(metricURIValues, mType)
 		metricURIValues = append(metricURIValues, mName)
 
 		m, ok := addedMetrics[mName]

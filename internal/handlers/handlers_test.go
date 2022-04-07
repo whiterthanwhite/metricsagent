@@ -22,52 +22,53 @@ func TestGetMetricValueFromServer(t *testing.T) {
 	var resp *http.Response
 	var body string
 
-	resp, body = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testCounter/100")
+	resp, _ = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testCounter/100")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	resp, body = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testCounter/none")
+	resp, _ = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testCounter/none")
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
-	resp, body = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/gauge/testGauge/100")
+	resp, _ = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/gauge/testGauge/100")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	resp, body = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/527")
+	resp, _ = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/527")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	resp, body = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/455")
+	resp, _ = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/455")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	resp, body = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/187")
+	resp, _ = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/187")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	resp, body = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/gauge/testSetGet134/65637.019")
+	resp, _ = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/gauge/testSetGet134/65637.019")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	resp, body = testGetMetricValueFromServer(t, ts, http.MethodGet, "/value/gauge/testSetGet134")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "65637.019", body)
 
-	resp, body = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/527")
+	resp, _ = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/527")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	resp, body = testGetMetricValueFromServer(t, ts, http.MethodGet, "/value/counter/testSetGet33")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "527", body)
 
-	resp, body = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/982")
+	resp, _ = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/982")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	resp, body = testGetMetricValueFromServer(t, ts, http.MethodGet, "/value/counter/testSetGet33")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "982", body)
 
-	resp, body = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/1169")
+	resp, _ = testGetMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/1169")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	resp, body = testGetMetricValueFromServer(t, ts, http.MethodGet, "/value/counter/testSetGet33")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "1169", body)
 
+	resp.Body.Close()
 }
 
 func testGetMetricValueFromServer(t *testing.T, ts *httptest.Server, method, path string) (*http.Response, string) {
