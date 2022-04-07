@@ -69,9 +69,6 @@ func GetMetricValueFromServer(f *os.File) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		mName := chi.URLParam(r, "metricName")
 
-		metricURIValues := make([]string, 0)
-		metricURIValues = append(metricURIValues, mName)
-
 		m, ok := addedMetrics[mName]
 		if !ok {
 			http.Error(rw, "Metric wasn't found", http.StatusNotFound)
