@@ -1,11 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
@@ -15,8 +16,12 @@ import (
 )
 
 func TestGetMetricValueFromServer(t *testing.T) {
+	_, cancel := context.WithCancel(context.Background())
+	time.AfterFunc(1*time.Second, cancel)
+
 	metricFile := storage.OpenMetricFileCSV()
 	defer metricFile.Close()
+
 	r := chi.NewRouter()
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", GetAllMetricsFromFile())
@@ -29,18 +34,14 @@ func TestGetMetricValueFromServer(t *testing.T) {
 				GetMetricValueFromServer(metricFile))
 		})
 	})
-	go log.Fatal(http.ListenAndServe(":8080", r))
-
 	ts := httptest.NewServer(r)
-	ts.URL = "http://127.0.0.1:8080"
-
 	defer ts.Close()
 
 	var resp *http.Response
 	var body string
 
 	resp, _ = getMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testCounter/100")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "")
 	resp.Body.Close()
 
 	resp, _ = getMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testCounter/none")
