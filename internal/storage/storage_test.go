@@ -22,10 +22,10 @@ func TestOpenMetricFileCSV(t *testing.T) {
 			f := OpenMetricFileCSV()
 			f.Close()
 
-			_, err := os.OpenFile("tmp.csv", os.O_RDWR, 0750)
+			_, err := os.OpenFile("tmp.DS_Store", os.O_RDWR, 0750)
 			assert.Equal(t, tt.isFileExists, assert.Nil(t, err, ""))
 
-			os.Remove("tmp.csv")
+			os.Remove("tmp.DS_Store")
 		})
 	}
 }
