@@ -49,6 +49,7 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 				http.Error(rw, "", http.StatusBadRequest)
 				return
 			}
+			log.Println(value) // Debug
 			m.UpdateValue(value)
 		case metrics.GaugeType:
 			value, err := strconv.ParseFloat(mValue, 64)
@@ -56,6 +57,7 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 				http.Error(rw, "", http.StatusBadRequest)
 				return
 			}
+			log.Println(value) // Debug
 			m.UpdateValue(value)
 		}
 
