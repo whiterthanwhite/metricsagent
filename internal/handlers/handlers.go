@@ -48,7 +48,9 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 				http.Error(rw, "", http.StatusBadRequest)
 				return
 			}
-			log.Println(value) // Debug
+			// Debug
+			log.Printf("Update value. Metric name:%v, metric type: %v, metric value: %v", mName,
+				mType, value)
 			m.UpdateValue(value)
 		case metrics.GaugeType:
 			value, err := strconv.ParseFloat(mValue, 64)
@@ -56,7 +58,9 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 				http.Error(rw, "", http.StatusBadRequest)
 				return
 			}
-			log.Println(value) // Debug
+			// Debug
+			log.Printf("Update value. Metric name:%v, metric type: %v, metric value: %v", mName,
+				mType, value)
 			m.UpdateValue(value)
 		}
 
@@ -88,6 +92,9 @@ func GetMetricValueFromServer(f *os.File) http.HandlerFunc {
 		default:
 			responseWriterWriteCheck(rw, []byte(fmt.Sprintf("%v", v)))
 		}
+		// Debug
+		log.Printf("Get value. Metric name:%v, metric type: %v, metric value: %v", mName,
+			m.GetTypeName(), m.GetValue())
 	}
 }
 
