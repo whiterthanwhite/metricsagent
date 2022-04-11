@@ -70,6 +70,7 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 
 		rw.Header().Add("Content-Type", "text/plain")
 		rw.WriteHeader(http.StatusOK)
+		log.Println(addedMetrics)
 	}
 }
 
@@ -97,6 +98,7 @@ func GetMetricValueFromServer(f *os.File) http.HandlerFunc {
 		// Debug
 		log.Printf("Get value. Metric name:%v, metric type: %v, metric value: %v", mName,
 			m.GetTypeName(), m.GetValue())
+		log.Println(addedMetrics)
 	}
 }
 
