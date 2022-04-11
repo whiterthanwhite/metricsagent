@@ -72,7 +72,7 @@ func (cm CounterMetric) GetValue() interface{} {
 func (cm *CounterMetric) UpdateValue(v interface{}) {
 	newValue, ok := v.(int64)
 	if ok {
-		cm.Value = counter(newValue)
+		cm.Value += counter(newValue)
 	}
 }
 

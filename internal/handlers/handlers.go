@@ -22,7 +22,6 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 		mName := chi.URLParam(r, "metricName")
 		mType := chi.URLParam(r, "metricType")
 		mValue := chi.URLParam(r, "metricValue")
-		log.Printf("Update metric %v", mName)
 
 		switch mType {
 		case "gauge", "counter":
@@ -49,15 +48,6 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 				http.Error(rw, "", http.StatusBadRequest)
 				return
 			}
-			// Debug
-			log.Printf("Update value. Metric name:%v, metric type: %v, metric value: %v", mName,
-				mType, value)
-			if value == 455 {
-				value = 982
-			}
-			if value == 187 {
-				value = 1169
-			}
 			m.UpdateValue(value)
 		case metrics.GaugeType:
 			value, err := strconv.ParseFloat(mValue, 64)
@@ -65,9 +55,6 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 				http.Error(rw, "", http.StatusBadRequest)
 				return
 			}
-			// Debug
-			log.Printf("Update value. Metric name:%v, metric type: %v, metric value: %v", mName,
-				mType, value)
 			m.UpdateValue(value)
 		}
 
@@ -82,7 +69,6 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 func GetMetricValueFromServer(f *os.File) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		mName := chi.URLParam(r, "metricName")
-		log.Printf("Get metric %v", mName)
 
 		m, ok := addedMetrics[mName]
 		if !ok {
@@ -100,9 +86,6 @@ func GetMetricValueFromServer(f *os.File) http.HandlerFunc {
 		default:
 			responseWriterWriteCheck(rw, []byte(fmt.Sprintf("%v", v)))
 		}
-		// Debug
-		log.Printf("Get value. Metric name:%v, metric type: %v, metric value: %v", mName,
-			m.GetTypeName(), m.GetValue())
 	}
 }
 
