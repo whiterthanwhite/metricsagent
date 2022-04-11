@@ -79,7 +79,7 @@ func TestGetMetricValueFromServer(t *testing.T) {
 
 	resp, body = getMetricValueFromServer(t, ts, http.MethodGet, "/value/counter/testSetGet33")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "527", body)
+	assert.Equal(t, "1696", body)
 	resp.Body.Close()
 
 	resp, _ = getMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/982")
@@ -88,7 +88,7 @@ func TestGetMetricValueFromServer(t *testing.T) {
 
 	resp, body = getMetricValueFromServer(t, ts, http.MethodGet, "/value/counter/testSetGet33")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "982", body)
+	assert.Equal(t, "2678", body)
 	resp.Body.Close()
 
 	resp, _ = getMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/1169")
@@ -97,7 +97,7 @@ func TestGetMetricValueFromServer(t *testing.T) {
 
 	resp, body = getMetricValueFromServer(t, ts, http.MethodGet, "/value/counter/testSetGet33")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "1169", body)
+	assert.Equal(t, "3847", body)
 	resp.Body.Close()
 }
 
