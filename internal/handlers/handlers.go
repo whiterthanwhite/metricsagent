@@ -103,10 +103,6 @@ func GetMetricValueFromServer(f *os.File) http.HandlerFunc {
 		// Debug
 		log.Printf("Get value. Metric name:%v, metric type: %v, metric value: %v", mName,
 			m.GetTypeName(), m.GetValue())
-		for _, mCheck := range addedMetrics {
-			log.Print(mCheck)
-			log.Print(" ")
-		}
 	}
 }
 
