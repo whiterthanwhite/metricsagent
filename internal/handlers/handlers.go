@@ -23,6 +23,7 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 		mType := chi.URLParam(r, "metricType")
 		mValue := chi.URLParam(r, "metricValue")
 		log.Printf("Update metric %v", mName)
+		return // debug
 
 		switch mType {
 		case "gauge", "counter":
@@ -70,10 +71,6 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 
 		rw.Header().Add("Content-Type", "text/plain")
 		rw.WriteHeader(http.StatusOK)
-		for _, mCheck := range addedMetrics {
-			log.Print(mCheck)
-			log.Print(" ")
-		}
 	}
 }
 
