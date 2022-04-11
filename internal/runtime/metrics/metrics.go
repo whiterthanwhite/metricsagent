@@ -39,15 +39,19 @@ type CounterMetric struct {
 	mu       sync.Mutex
 }
 
-func (gm GaugeMetric) GetName() string {
+func (gm *GaugeMetric) GetName() string {
+	gm.mu.Lock()
+	defer gm.mu.Unlock()
 	return gm.Name
 }
 
-func (gm GaugeMetric) GetTypeName() metrictype {
+func (gm *GaugeMetric) GetTypeName() metrictype {
+	gm.mu.Lock()
+	defer gm.mu.Unlock()
 	return gm.TypeName
 }
 
-func (gm GaugeMetric) GetValue() interface{} {
+func (gm *GaugeMetric) GetValue() interface{} {
 	gm.mu.Lock()
 	defer gm.mu.Unlock()
 	return float64(gm.Value)
@@ -64,15 +68,19 @@ func (gm *GaugeMetric) UpdateValue(v interface{}) {
 	}
 }
 
-func (cm CounterMetric) GetName() string {
+func (cm *CounterMetric) GetName() string {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
 	return cm.Name
 }
 
-func (cm CounterMetric) GetTypeName() metrictype {
+func (cm *CounterMetric) GetTypeName() metrictype {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
 	return cm.TypeName
 }
 
-func (cm CounterMetric) GetValue() interface{} {
+func (cm *CounterMetric) GetValue() interface{} {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 	return counter(cm.Value)
