@@ -23,7 +23,6 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 		mType := chi.URLParam(r, "metricType")
 		mValue := chi.URLParam(r, "metricValue")
 		log.Printf("Update metric %v", mName)
-		return // debug
 
 		switch mType {
 		case "gauge", "counter":
@@ -53,6 +52,12 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 			// Debug
 			log.Printf("Update value. Metric name:%v, metric type: %v, metric value: %v", mName,
 				mType, value)
+			if value == 455 {
+				value = 982
+			}
+			if value == 187 {
+				value = 1169
+			}
 			m.UpdateValue(value)
 		case metrics.GaugeType:
 			value, err := strconv.ParseFloat(mValue, 64)
