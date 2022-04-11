@@ -42,8 +42,12 @@ func getMetricURLString(m metrics.Metric) string {
 func main() {
 	httpClient := http.Client{}
 	addedMetrics := metrics.GetAllMetrics()
+
 	pollTicker := time.NewTicker(pollInterval * time.Second)
 	reportTicker := time.NewTicker(reportInterval * time.Second)
+	defer pollTicker.Stop()
+	defer reportTicker.Stop()
+
 	for {
 		select {
 		case <-pollTicker.C:

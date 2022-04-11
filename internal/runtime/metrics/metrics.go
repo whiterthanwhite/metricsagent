@@ -4,6 +4,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type (
@@ -28,12 +29,14 @@ type GaugeMetric struct {
 	Name     string
 	TypeName metrictype
 	Value    gauge
+	mu       sync.Mutex
 }
 
 type CounterMetric struct {
 	Name     string
 	TypeName metrictype
 	Value    counter
+	mu       sync.Mutex
 }
 
 func (gm GaugeMetric) GetName() string {
@@ -45,15 +48,19 @@ func (gm GaugeMetric) GetTypeName() metrictype {
 }
 
 func (gm GaugeMetric) GetValue() interface{} {
+	gm.mu.Lock()
+	defer gm.mu.Unlock()
 	return float64(gm.Value)
 }
 
 func (gm *GaugeMetric) UpdateValue(v interface{}) {
 	newValue, ok := v.(float64)
 	if ok {
+		gm.mu.Lock()
 		gm.Value = gauge(newValue)
 		counterValue := counterMetrics["PollCount"].GetValue()
 		counterMetrics["PollCount"].UpdateValue(counterValue.(counter) + 1)
+		gm.mu.Unlock()
 	}
 }
 
@@ -66,13 +73,17 @@ func (cm CounterMetric) GetTypeName() metrictype {
 }
 
 func (cm CounterMetric) GetValue() interface{} {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
 	return counter(cm.Value)
 }
 
 func (cm *CounterMetric) UpdateValue(v interface{}) {
 	newValue, ok := v.(int64)
 	if ok {
+		cm.mu.Lock()
 		cm.Value += counter(newValue)
+		cm.mu.Unlock()
 	}
 }
 
