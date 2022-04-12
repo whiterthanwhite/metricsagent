@@ -96,11 +96,19 @@ func (cm *CounterMetric) UpdateValue(v interface{}) {
 }
 
 var (
-	metrics        = make(map[string]Metric)
 	counterMetrics = make(map[string]Metric)
 )
 
 func init() {
+	counterMetrics["PollCount"] = &CounterMetric{
+		Name:     "PollCount",
+		TypeName: CounterType,
+		Value:    0,
+	}
+}
+
+func GetAllMetrics() map[string]Metric {
+	metrics := make(map[string]Metric)
 	metrics["Alloc"] = &GaugeMetric{
 		Name:     "Alloc",
 		TypeName: GaugeType,
@@ -246,24 +254,12 @@ func init() {
 		TypeName: GaugeType,
 		Value:    0,
 	}
-	counterMetrics["PollCount"] = &CounterMetric{
-		Name:     "PollCount",
-		TypeName: CounterType,
-		Value:    0,
-	}
-}
-
-func GetAllMetrics() map[string]Metric {
 	return metrics
 }
 
 func GetMetric(name string, mType string) Metric {
-	m, ok := metrics[name]
-	if !ok {
-		mt := metrictype(mType)
-		m = createMetric(name, mt)
-	}
-	return m
+	mt := metrictype(mType)
+	return createMetric(name, mt)
 }
 
 func createMetric(name string, kind metrictype) Metric {

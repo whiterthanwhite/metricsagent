@@ -17,7 +17,7 @@ var (
 	addedMetrics map[string]metrics.Metric
 )
 
-func UpdateMetricHandler(f *os.File) http.HandlerFunc {
+func UpdateMetricHandler(f *os.File, addedMetrics map[string]metrics.Metric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		mName := chi.URLParam(r, "metricName")
 		mType := chi.URLParam(r, "metricType")
@@ -66,7 +66,7 @@ func UpdateMetricHandler(f *os.File) http.HandlerFunc {
 	}
 }
 
-func GetMetricValueFromServer(f *os.File) http.HandlerFunc {
+func GetMetricValueFromServer(f *os.File, addedMetrics map[string]metrics.Metric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		mName := chi.URLParam(r, "metricName")
 
@@ -125,8 +125,4 @@ func responseWriterWriteCheck(rw http.ResponseWriter, v []byte) {
 	if err != nil {
 		log.Fatal()
 	}
-}
-
-func SetMetrics(metrics map[string]metrics.Metric) {
-	addedMetrics = metrics
 }

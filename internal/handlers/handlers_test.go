@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
 	"github.com/whiterthanwhite/metricsagent/internal/storage"
 )
 
@@ -20,6 +21,10 @@ func TestGetMetricValueFromServer(t *testing.T) {
 	time.AfterFunc(1*time.Second, cancel)
 
 	metricFile := storage.OpenMetricFileCSV()
+	addedMetrics := storage.GetMetricsFromFile(metricFile)
+	if len(addedMetrics) == 0 {
+		addedMetrics = metrics.GetAllMetrics()
+	}
 	defer metricFile.Close()
 
 	r := chi.NewRouter()
@@ -27,11 +32,11 @@ func TestGetMetricValueFromServer(t *testing.T) {
 		r.Get("/", GetAllMetricsFromFile())
 		r.Route("/update", func(r chi.Router) {
 			r.Post("/{metricType}/{metricName}/{metricValue}",
-				UpdateMetricHandler(metricFile))
+				UpdateMetricHandler(metricFile, addedMetrics))
 		})
 		r.Route("/value", func(r chi.Router) {
 			r.Get("/{metricType}/{metricName}",
-				GetMetricValueFromServer(metricFile))
+				GetMetricValueFromServer(metricFile, addedMetrics))
 		})
 	})
 	ts := httptest.NewServer(r)

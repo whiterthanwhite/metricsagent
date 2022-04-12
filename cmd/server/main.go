@@ -20,7 +20,6 @@ func main() {
 	if len(addedMetrics) == 0 {
 		addedMetrics = metrics.GetAllMetrics()
 	}
-	handlers.SetMetrics(addedMetrics)
 
 	r := chi.NewRouter()
 
@@ -28,11 +27,11 @@ func main() {
 		r.Get("/", handlers.GetAllMetricsFromFile())
 		r.Route("/update", func(r chi.Router) {
 			r.Post("/{metricType}/{metricName}/{metricValue}",
-				handlers.UpdateMetricHandler(metricFile))
+				handlers.UpdateMetricHandler(metricFile, addedMetrics))
 		})
 		r.Route("/value", func(r chi.Router) {
 			r.Get("/{metricType}/{metricName}",
-				handlers.GetMetricValueFromServer(metricFile))
+				handlers.GetMetricValueFromServer(metricFile, addedMetrics))
 		})
 	})
 
