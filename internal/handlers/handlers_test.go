@@ -120,7 +120,74 @@ func TestGetMetricFromServer(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, string(jsonServerMetric), string(userResult))
+		})
+	}
+}
 
+func TestUpdateMetricOnServer(t *testing.T) {
+	type (
+		send struct {
+			contentType   string
+			updateValues  []float64
+			updateMetrics []metrics.NewMetric
+		}
+		want struct {
+			status      int
+			contentType string
+		}
+	)
+	tests := []struct {
+		name          string
+		target        string
+		serverMetrics []metrics.NewMetric
+		send          send
+		want          want
+	}{
+		{
+			name:   "test1",
+			target: "/update/",
+			send: send{
+				contentType:  "application/json",
+				updateValues: []float64{150.01},
+				updateMetrics: []metrics.NewMetric{
+					{
+						ID:    "testGaugeMetric01",
+						MType: "gauge",
+					},
+				},
+			},
+			want: want{
+				status:      200,
+				contentType: "application/json",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			updateMetrics := tt.send.updateMetrics
+			for i, updateValue := range tt.send.updateValues {
+				updateMetrics[i].Value = &updateValue
+			}
+			updateMetricBytes, err := json.Marshal(updateMetrics)
+			if err != nil {
+				panic(err)
+			}
+			updateMetricsBuffer := bytes.NewBuffer(updateMetricBytes)
+			request := httptest.NewRequest(http.MethodPost, tt.target, updateMetricsBuffer)
+			request.Header.Set("Content-Type", tt.send.contentType)
+			w := httptest.NewRecorder()
+			h := http.HandlerFunc(UpdateMetricOnServer(&tt.serverMetrics))
+			h.ServeHTTP(w, request)
+			result := w.Result()
+
+			assert.Equal(t, tt.want.status, result.StatusCode)
+			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
+
+			serverMetricsBytes, err := json.Marshal(tt.serverMetrics)
+			if err != nil {
+				panic(err)
+			}
+			assert.Equal(t, string(updateMetricBytes), string(serverMetricsBytes))
 		})
 	}
 }
