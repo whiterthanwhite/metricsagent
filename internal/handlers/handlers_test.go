@@ -1,122 +1,126 @@
 package handlers
 
 import (
-	"context"
+	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
-	"github.com/whiterthanwhite/metricsagent/internal/storage"
 )
 
-func TestGetMetricValueFromServer(t *testing.T) {
-	_, cancel := context.WithCancel(context.Background())
-	time.AfterFunc(1*time.Second, cancel)
-
-	metricFile := storage.OpenMetricFileCSV()
-	addedMetrics := storage.GetMetricsFromFile(metricFile)
-	if len(addedMetrics) == 0 {
-		addedMetrics = metrics.GetAllMetrics()
+func TestGetMetricFromServer(t *testing.T) {
+	type send struct {
+		contentType string
+		testMetrics []metrics.NewMetric
 	}
-	defer metricFile.Close()
+	type want struct {
+		contentType   string
+		statusCode    int
+		metricValues  []float64
+		serverMetrics []metrics.NewMetric
+	}
+	tests := []struct {
+		name    string
+		request string
+		send    send
+		want    want
+	}{
+		{
+			name:    "test1",
+			request: "/value/",
+			send: send{
+				contentType: "application/json",
+				testMetrics: []metrics.NewMetric{
+					{
+						ID:    "testGaugeMetric01",
+						MType: "gauge",
+					},
+					{
+						ID:    "testGaugeMetric02",
+						MType: "gauge",
+					},
+				},
+			},
+			want: want{
+				contentType:  "application/json",
+				statusCode:   200,
+				metricValues: []float64{150.01, 1003.405},
+				serverMetrics: []metrics.NewMetric{
+					{
+						ID:    "testGaugeMetric01",
+						MType: "gauge",
+					},
+					{
+						ID:    "testGaugeMetric02",
+						MType: "gauge",
+					},
+				},
+			},
+		},
+		{
+			name:    "test 2",
+			request: "/value/",
+			send: send{
+				contentType: "application/json",
+				testMetrics: []metrics.NewMetric{
+					{
+						ID:    "testGaugeMetric01",
+						MType: "gauge",
+					},
+				},
+			},
+			want: want{
+				contentType:  "application/json",
+				statusCode:   200,
+				metricValues: []float64{},
+				serverMetrics: []metrics.NewMetric{
+					{
+						ID:    "testGaugeMetric01",
+						MType: "gauge",
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for i, metricValue := range tt.want.metricValues {
+				tt.want.serverMetrics[i].Value = &metricValue
+			}
+			jsonServerMetric, err := json.Marshal(tt.want.serverMetrics)
+			if err != nil {
+				panic(err)
+			}
 
-	r := chi.NewRouter()
-	r.Route("/", func(r chi.Router) {
-		r.Get("/", GetAllMetricsFromFile())
-		r.Route("/update", func(r chi.Router) {
-			r.Post("/{metricType}/{metricName}/{metricValue}",
-				UpdateMetricHandler(metricFile, addedMetrics))
+			testMetrics := tt.send.testMetrics
+			requestBodyBytes, err := json.Marshal(testMetrics)
+			if err != nil {
+				panic(err)
+			}
+			requestBodyBuffer := bytes.NewBuffer(requestBodyBytes)
+			request := httptest.NewRequest(http.MethodPost, tt.request, requestBodyBuffer)
+			request.Header.Set("Content-Type", tt.send.contentType)
+			w := httptest.NewRecorder()
+			h := http.HandlerFunc(GetMetricFromServer(tt.want.serverMetrics))
+			h.ServeHTTP(w, request)
+			result := w.Result()
+
+			assert.Equal(t, tt.want.statusCode, result.StatusCode)
+			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
+
+			userResult, err := ioutil.ReadAll(result.Body)
+			require.NoError(t, err)
+			err = result.Body.Close()
+			require.NoError(t, err)
+
+			assert.Equal(t, string(jsonServerMetric), string(userResult))
+
 		})
-		r.Route("/value", func(r chi.Router) {
-			r.Get("/{metricType}/{metricName}",
-				GetMetricValueFromServer(metricFile, addedMetrics))
-		})
-	})
-	ts := httptest.NewServer(r)
-	defer ts.Close()
-
-	var resp *http.Response
-	var body string
-
-	resp, _ = getMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testCounter/100")
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "")
-	resp.Body.Close()
-
-	resp, _ = getMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testCounter/none")
-	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-	resp.Body.Close()
-
-	resp, _ = getMetricValueFromServer(t, ts, http.MethodPost, "/update/gauge/testGauge/100")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	resp.Body.Close()
-
-	resp, _ = getMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/527")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	resp.Body.Close()
-
-	resp, _ = getMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/455")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	resp.Body.Close()
-
-	resp, _ = getMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/187")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	resp.Body.Close()
-
-	resp, _ = getMetricValueFromServer(t, ts, http.MethodPost, "/update/gauge/testSetGet134/65637.019")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	resp.Body.Close()
-
-	resp, body = getMetricValueFromServer(t, ts, http.MethodGet, "/value/gauge/testSetGet134")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "65637.019", body)
-	resp.Body.Close()
-
-	resp, _ = getMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/527")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	resp.Body.Close()
-
-	resp, body = getMetricValueFromServer(t, ts, http.MethodGet, "/value/counter/testSetGet33")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "1696", body)
-	resp.Body.Close()
-
-	resp, _ = getMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/982")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	resp.Body.Close()
-
-	resp, body = getMetricValueFromServer(t, ts, http.MethodGet, "/value/counter/testSetGet33")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "2678", body)
-	resp.Body.Close()
-
-	resp, _ = getMetricValueFromServer(t, ts, http.MethodPost, "/update/counter/testSetGet33/1169")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	resp.Body.Close()
-
-	resp, body = getMetricValueFromServer(t, ts, http.MethodGet, "/value/counter/testSetGet33")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "3847", body)
-	resp.Body.Close()
-}
-
-func getMetricValueFromServer(t *testing.T, ts *httptest.Server, method, path string) (*http.Response, string) {
-	req, err := http.NewRequest(method, ts.URL+path, nil)
-	require.NoError(t, err)
-
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
-
-	respBody, err := ioutil.ReadAll(resp.Body)
-	require.NoError(t, err)
-
-	defer resp.Body.Close()
-
-	return resp, string(respBody)
+	}
 }

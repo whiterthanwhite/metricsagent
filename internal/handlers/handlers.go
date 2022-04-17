@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -11,10 +13,6 @@ import (
 
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
 	"github.com/whiterthanwhite/metricsagent/internal/storage"
-)
-
-var (
-	addedMetrics map[string]metrics.Metric
 )
 
 func UpdateMetricHandler(f *os.File, addedMetrics map[string]metrics.Metric) http.HandlerFunc {
@@ -35,7 +33,7 @@ func UpdateMetricHandler(f *os.File, addedMetrics map[string]metrics.Metric) htt
 		metricURIValues = append(metricURIValues, mName)
 		metricURIValues = append(metricURIValues, mValue)
 
-		m, ok := getMetricFromValues(metricURIValues)
+		m, ok := getMetricFromValues(metricURIValues, addedMetrics)
 		if !ok && m == nil {
 			http.Error(rw, "Metric wont't found", http.StatusBadRequest)
 			return
@@ -89,7 +87,7 @@ func GetMetricValueFromServer(f *os.File, addedMetrics map[string]metrics.Metric
 	}
 }
 
-func GetAllMetricsFromFile() http.HandlerFunc {
+func GetAllMetricsFromFile(addedMetrics map[string]metrics.Metric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		responseWriterWriteCheck(rw, []byte("<html><body>"))
 		for _, m := range addedMetrics {
@@ -102,7 +100,7 @@ func GetAllMetricsFromFile() http.HandlerFunc {
 	}
 }
 
-func getMetricFromValues(sendedValues []string) (metrics.Metric, bool) {
+func getMetricFromValues(sendedValues []string, addedMetrics map[string]metrics.Metric) (metrics.Metric, bool) {
 	mType := sendedValues[0]
 	metricName := sendedValues[1]
 
@@ -125,4 +123,112 @@ func responseWriterWriteCheck(rw http.ResponseWriter, v []byte) {
 	if err != nil {
 		log.Fatal()
 	}
+}
+
+// new functions
+func GetAllMetricsFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Content-Type") != "application/json" {
+			http.Error(rw, "", http.StatusBadRequest)
+		}
+		metricsBytes, err := json.Marshal(serverMetrics)
+		if err != nil {
+			http.Error(rw, "", http.StatusBadRequest)
+		}
+
+		_, err = rw.Write(metricsBytes)
+		if err != nil {
+			http.Error(rw, "", http.StatusInternalServerError)
+		}
+	}
+}
+
+func GetMetricFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Content-Type") != "application/json" {
+			http.Error(rw, "", http.StatusBadRequest)
+			return
+		}
+		requestBodyBytes, err := getRequestBody(r)
+		if err != nil {
+			http.Error(rw, "", http.StatusBadRequest)
+			return
+		}
+		if len(requestBodyBytes) == 0 {
+			http.Error(rw, "", http.StatusBadRequest)
+			return
+		}
+		requestedMetrics := make([]metrics.NewMetric, 0)
+		if err := json.Unmarshal(requestBodyBytes, &requestedMetrics); err != nil {
+			http.Error(rw, "", http.StatusInternalServerError)
+			return
+		}
+		for i := 0; i < len(requestedMetrics); i++ {
+			requestedMetric := &requestedMetrics[i]
+			for _, serverMetric := range serverMetrics {
+				if serverMetric.ID == (*requestedMetric).ID && serverMetric.MType == (*requestedMetric).MType {
+					(*requestedMetric).Delta = serverMetric.Delta
+					(*requestedMetric).Value = serverMetric.Value
+				}
+			}
+		}
+		requestedMetricsBytes, err := json.Marshal(requestedMetrics)
+		if err != nil {
+			http.Error(rw, "", http.StatusInternalServerError)
+			return
+		}
+		rw.Header().Set("Content-Type", "application/json")
+		rw.Write(requestedMetricsBytes)
+	}
+}
+
+func UpdateMetricOnServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Content-Type") != "application/json" {
+			http.Error(rw, "", http.StatusBadRequest)
+		}
+		requestBodyBytes, err := getRequestBody(r)
+		if err != nil {
+			http.Error(rw, "", http.StatusBadRequest)
+		}
+		var updateMetrics []metrics.NewMetric
+		if err := json.Unmarshal(requestBodyBytes, &updateMetrics); err != nil {
+			http.Error(rw, "", http.StatusInternalServerError)
+			return
+		}
+		if len(updateMetrics) == 0 {
+			http.Error(rw, "", http.StatusBadRequest)
+			return
+		}
+		for i := 0; i < len(updateMetrics); i++ {
+			updateMetric := updateMetrics[i]
+			metricFound := false
+			for j := 0; j < len(serverMetrics); j++ {
+				serverMetric := &serverMetrics[i]
+				if (*serverMetric).ID == updateMetric.ID && (*serverMetric).MType == updateMetric.MType {
+					serverMetric.Delta = updateMetric.Delta
+					serverMetric.Value = updateMetric.Value
+					metricFound = true
+				}
+			}
+			if !metricFound {
+				serverMetrics = append(serverMetrics, metrics.NewMetric{
+					ID:    updateMetric.ID,
+					MType: updateMetric.MType,
+					Delta: updateMetric.Delta,
+					Value: updateMetric.Value,
+				})
+			}
+		}
+		rw.WriteHeader(http.StatusOK)
+	}
+}
+
+func getRequestBody(r *http.Request) ([]byte, error) {
+	requestBody, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+	return requestBody, nil
 }
