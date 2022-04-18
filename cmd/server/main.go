@@ -38,6 +38,8 @@ func main() {
 	*/
 
 	serverMetrics := make([]metrics.NewMetric, 0)
+	var a int64 = 0
+	serverMetrics = append(serverMetrics, metrics.NewMetric{"PollCounter", metrics.CounterType, &a, nil})
 	r.Route("/", func(r chi.Router) {
 		r.Post("/", handlers.GetAllMetricsFromServer(serverMetrics))
 		r.Post("/update/", handlers.UpdateMetricOnServer(&serverMetrics)) // update metric
