@@ -115,6 +115,7 @@ func TestGetMetricFromServer(t *testing.T) {
 			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
 
 			userResult, err := ioutil.ReadAll(result.Body)
+			defer result.Body.Close()
 			require.NoError(t, err)
 			err = result.Body.Close()
 			require.NoError(t, err)

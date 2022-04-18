@@ -140,6 +140,9 @@ func GetAllMetricsFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc
 		if err != nil {
 			http.Error(rw, "", http.StatusInternalServerError)
 		}
+
+		rw.Header().Set("Content-Type", "application/json")
+		rw.Write(metricsBytes)
 	}
 }
 
