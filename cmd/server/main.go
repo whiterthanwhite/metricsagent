@@ -40,7 +40,7 @@ func main() {
 	serverMetrics := make([]metrics.NewMetric, 0)
 	r.Route("/", func(r chi.Router) {
 		r.Post("/", handlers.GetAllMetricsFromServer(serverMetrics))
-		r.Post("/update/", handlers.UpdateMetricOnServer(serverMetrics)) // update metric
+		r.Post("/update/", handlers.UpdateMetricOnServer(&serverMetrics)) // update metric
 		r.Post("/value/", handlers.GetMetricFromServer(serverMetrics))
 	})
 
