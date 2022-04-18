@@ -160,41 +160,29 @@ func GetMetricFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
 			http.Error(rw, "", http.StatusBadRequest)
 			return
 		}
-		/*
-			requestedMetrics := make([]metrics.NewMetric, 0)
-			log.Println(string(requestBodyBytes), requestedMetrics)
-			if err := json.Unmarshal(requestBodyBytes, &requestedMetrics); err != nil {
-				http.Error(rw, "", http.StatusInternalServerError)
-				return
-			}
-			for i := 0; i < len(requestedMetrics); i++ {
-				requestedMetric := &requestedMetrics[i]
-				for _, serverMetric := range serverMetrics {
-					if serverMetric.ID == (*requestedMetric).ID && serverMetric.MType == (*requestedMetric).MType {
-						(*requestedMetric).Delta = serverMetric.Delta
-						(*requestedMetric).Value = serverMetric.Value
-					}
+		requestedMetrics := make([]metrics.NewMetric, 0)
+		log.Println(string(requestBodyBytes), requestedMetrics)
+		if err := json.Unmarshal(requestBodyBytes, &requestedMetrics); err != nil {
+			http.Error(rw, "", http.StatusInternalServerError)
+			return
+		}
+		for i := 0; i < len(requestedMetrics); i++ {
+			requestedMetric := &requestedMetrics[i]
+			for _, serverMetric := range serverMetrics {
+				if serverMetric.ID == (*requestedMetric).ID && serverMetric.MType == (*requestedMetric).MType {
+					(*requestedMetric).Delta = serverMetric.Delta
+					(*requestedMetric).Value = serverMetric.Value
 				}
 			}
-		*/
-		/*
-			requestedMetric := metrics.NewMetric{}
-			log.Println(string(requestBodyBytes))
-			if err := json.Unmarshal(requestBodyBytes, &requestedMetric); err != nil {
-				http.Error(rw, "", http.StatusInternalServerError)
-				return
-			}
-			log.Println(requestedMetric)
-			requestedMetricsBytes, err := json.Marshal(requestedMetric)
-			log.Println(string(requestedMetricsBytes))
-			if err != nil {
-				http.Error(rw, "", http.StatusInternalServerError)
-				return
-			}
-		*/
+		}
+		requestedMetricsBytes, err := json.Marshal(requestedMetrics)
+		log.Println(string(requestedMetricsBytes))
+		if err != nil {
+			http.Error(rw, "", http.StatusInternalServerError)
+			return
+		}
 		rw.Header().Set("Content-Type", "application/json")
-		rw.Write([]byte{})
-		// rw.Write(requestedMetricsBytes)
+		rw.Write(requestedMetricsBytes)
 	}
 }
 
