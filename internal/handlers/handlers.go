@@ -128,7 +128,6 @@ func responseWriterWriteCheck(rw http.ResponseWriter, v []byte) {
 // new functions
 func GetAllMetricsFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		rw.Header().Set("Content-Type", "application/json")
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
 		}
@@ -141,13 +140,17 @@ func GetAllMetricsFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc
 		if err != nil {
 			http.Error(rw, "", http.StatusInternalServerError)
 		}
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusOK)
 		rw.Write(metricsBytes)
+
+		log.Println(rw.Header().Get("Content-Type"))
+		log.Println(rw.Header())
 	}
 }
 
 func GetMetricFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		rw.Header().Set("Content-Type", "application/json")
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
 			return
@@ -180,13 +183,15 @@ func GetMetricFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
 			http.Error(rw, "", http.StatusInternalServerError)
 			return
 		}
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusOK)
 		rw.Write(requestedMetricsBytes)
+		log.Println(rw.Header())
 	}
 }
 
 func UpdateMetricOnServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		rw.Header().Set("Content-Type", "application/json")
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
 		}
@@ -225,7 +230,9 @@ func UpdateMetricOnServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 			}
 		}
 		*serverMetrics = tempMetrics
+		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
+		log.Println(rw.Header())
 	}
 }
 
