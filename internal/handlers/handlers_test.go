@@ -180,6 +180,7 @@ func TestUpdateMetricOnServer(t *testing.T) {
 			h := http.HandlerFunc(UpdateMetricOnServer(&tt.serverMetrics))
 			h.ServeHTTP(w, request)
 			result := w.Result()
+			result.Body.Close()
 
 			assert.Equal(t, tt.want.status, result.StatusCode)
 			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
