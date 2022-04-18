@@ -191,9 +191,10 @@ func GetMetricFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
 				http.Error(rw, "", http.StatusInternalServerError)
 				return
 			}
-			rw.Header().Set("Content-Type", "application/json")
-			rw.Write(requestedMetricsBytes)
 		*/
+		rw.Header().Set("Content-Type", "application/json")
+		rw.Write([]byte{})
+		// rw.Write(requestedMetricsBytes)
 	}
 }
 
