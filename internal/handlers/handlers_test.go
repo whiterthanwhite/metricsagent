@@ -162,6 +162,24 @@ func TestUpdateMetricOnServer(t *testing.T) {
 				contentType: "application/json",
 			},
 		},
+		{
+			name:   "test2",
+			target: "/update/",
+			send: send{
+				contentType:  "application/json",
+				updateValues: []float64{949839.1573033818},
+				updateMetrics: []metrics.NewMetric{
+					{
+						ID:    "GetSet244",
+						MType: "gauge",
+					},
+				},
+			},
+			want: want{
+				status:      200,
+				contentType: "application/json",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
