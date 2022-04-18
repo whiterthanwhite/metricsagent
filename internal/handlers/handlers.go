@@ -165,6 +165,7 @@ func GetMetricFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
 			http.Error(rw, "", http.StatusInternalServerError)
 			return
 		}
+		log.Println(serverMetrics)
 		for i := 0; i < len(requestedMetrics); i++ {
 			requestedMetric := &requestedMetrics[i]
 			for _, serverMetric := range serverMetrics {
