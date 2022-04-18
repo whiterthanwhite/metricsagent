@@ -128,8 +128,6 @@ func responseWriterWriteCheck(rw http.ResponseWriter, v []byte) {
 // new functions
 func GetAllMetricsFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		log.Println("GetAllMetricsFromServer")
-		log.Println(r)
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
 		}
@@ -149,8 +147,6 @@ func GetAllMetricsFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc
 
 func GetMetricFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		log.Println("GetMetricFromServer")
-		log.Println(r)
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
 			return
@@ -190,8 +186,6 @@ func GetMetricFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
 
 func UpdateMetricOnServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		log.Println("UpdateMetricOnServer")
-		log.Println(r)
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
 		}
@@ -240,5 +234,6 @@ func getRequestBody(r *http.Request) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Println(string(requestBody))
 	return requestBody, nil
 }
