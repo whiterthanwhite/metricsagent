@@ -161,11 +161,12 @@ func GetMetricFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
 			return
 		}
 		requestedMetrics := make([]metrics.NewMetric, 0)
-		log.Println(string(requestBodyBytes), requestedMetrics)
+		log.Println(string(requestBodyBytes))
 		if err := json.Unmarshal(requestBodyBytes, &requestedMetrics); err != nil {
 			http.Error(rw, "", http.StatusInternalServerError)
 			return
 		}
+		log.Println(requestedMetrics)
 		for i := 0; i < len(requestedMetrics); i++ {
 			requestedMetric := &requestedMetrics[i]
 			for _, serverMetric := range serverMetrics {
