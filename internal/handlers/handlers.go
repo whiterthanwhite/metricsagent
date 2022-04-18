@@ -161,6 +161,7 @@ func GetMetricFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
 			return
 		}
 		requestedMetrics := make([]metrics.NewMetric, 0)
+		log.Println(requestedMetrics)
 		if err := json.Unmarshal(requestBodyBytes, &requestedMetrics); err != nil {
 			http.Error(rw, "", http.StatusInternalServerError)
 			return
