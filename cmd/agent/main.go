@@ -1,12 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
@@ -57,8 +56,8 @@ func main() {
 		case <-reportTicker.C:
 			for _, m := range addedMetrics {
 				urlMetric := getMetricURL(m)
-				resp, err := httpClient.Post(urlMetric.String(), "text/plain",
-					io.LimitReader(strings.NewReader(""), 0))
+				// resp, err := httpClient.Post(urlMetric.String(), "text/plain", io.LimitReader(strings.NewReader(""), 0))
+				resp, err := httpClient.Post(urlMetric.String(), "application/json", bytes.NewBuffer([]byte{}))
 				if err != nil {
 					log.Fatal(err)
 				}
