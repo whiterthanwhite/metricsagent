@@ -219,26 +219,28 @@ func UpdateMetricOnServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 			return
 		}
 		tempMetrics := *serverMetrics
-		for i := 0; i < len(updateMetrics); i++ {
-			updateMetric := updateMetrics[i]
-			metricFound := false
-			for j := 0; j < len(tempMetrics); j++ {
-				serverMetric := &tempMetrics[i]
-				if (*serverMetric).ID == updateMetric.ID && (*serverMetric).MType == updateMetric.MType {
-					serverMetric.Delta = updateMetric.Delta
-					serverMetric.Value = updateMetric.Value
-					metricFound = true
+		/*
+			for i := 0; i < len(updateMetrics); i++ {
+				updateMetric := updateMetrics[i]
+				metricFound := false
+				for j := 0; j < len(tempMetrics); j++ {
+					serverMetric := &tempMetrics[i]
+					if (*serverMetric).ID == updateMetric.ID && (*serverMetric).MType == updateMetric.MType {
+						serverMetric.Delta = updateMetric.Delta
+						serverMetric.Value = updateMetric.Value
+						metricFound = true
+					}
+				}
+				if !metricFound {
+					tempMetrics = append(tempMetrics, metrics.NewMetric{
+						ID:    updateMetric.ID,
+						MType: updateMetric.MType,
+						Delta: updateMetric.Delta,
+						Value: updateMetric.Value,
+					})
 				}
 			}
-			if !metricFound {
-				tempMetrics = append(tempMetrics, metrics.NewMetric{
-					ID:    updateMetric.ID,
-					MType: updateMetric.MType,
-					Delta: updateMetric.Delta,
-					Value: updateMetric.Value,
-				})
-			}
-		}
+		*/
 		*serverMetrics = tempMetrics
 		rw.Header().Set("Content-Type", "application/json")
 	}
