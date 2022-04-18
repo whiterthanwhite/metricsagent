@@ -183,14 +183,10 @@ func GetMetricFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
 			http.Error(rw, "", http.StatusInternalServerError)
 			return
 		}
+		log.Println(requestedMetric)
 		for _, serverMetric := range serverMetrics {
 			if serverMetric.ID == requestedMetric.ID && serverMetric.MType == requestedMetric.MType {
-				if serverMetric.Delta != nil {
-					requestedMetric.Delta = serverMetric.Delta
-				}
-				if serverMetric.Value != nil {
-					requestedMetric.Value = serverMetric.Value
-				}
+				log.Println(serverMetric)
 			}
 		}
 		requestedMetricsBytes, err := json.Marshal(requestedMetric)
