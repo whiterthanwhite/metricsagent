@@ -185,8 +185,12 @@ func GetMetricFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
 		}
 		for _, serverMetric := range serverMetrics {
 			if serverMetric.ID == requestedMetric.ID && serverMetric.MType == requestedMetric.MType {
-				requestedMetric.Delta = serverMetric.Delta
-				requestedMetric.Value = serverMetric.Value
+				if serverMetric.Delta != nil {
+					requestedMetric.Delta = serverMetric.Delta
+				}
+				if serverMetric.Value != nil {
+					requestedMetric.Value = serverMetric.Value
+				}
 			}
 		}
 		requestedMetricsBytes, err := json.Marshal(requestedMetric)
