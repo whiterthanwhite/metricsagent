@@ -147,6 +147,8 @@ func GetAllMetricsFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc
 
 func GetMetricFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		log.Println("GetMetricFromServer")
+		log.Println(serverMetrics)
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
 			return
@@ -165,7 +167,6 @@ func GetMetricFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
 			http.Error(rw, "", http.StatusInternalServerError)
 			return
 		}
-		log.Println(serverMetrics)
 		for i := 0; i < len(requestedMetrics); i++ {
 			requestedMetric := &requestedMetrics[i]
 			for _, serverMetric := range serverMetrics {
@@ -177,7 +178,6 @@ func GetMetricFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
 			}
 		}
 		requestedMetricsBytes, err := json.Marshal(requestedMetrics)
-		log.Println(string(requestedMetricsBytes))
 		if err != nil {
 			http.Error(rw, "", http.StatusInternalServerError)
 			return
