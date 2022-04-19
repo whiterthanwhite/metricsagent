@@ -31,7 +31,6 @@ func UpdateMetricHandler(addedMetrics map[string]metrics.Metric, newMetrics map[
 			mValue = params[3]
 		}
 
-		log.Println(mName, mType, mValue)
 		switch mType {
 		case "gauge", "counter":
 		default:
@@ -214,15 +213,23 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 
 func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		requestBody, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-			return
-		}
-		r.Body.Close()
+		/*
+			requestBody, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+				return
+			}
+			r.Body.Close()
+
+			var requestMetric metrics.Metrics
+			if err := json.Unmarshal(requestBody, &requestMetric); err != nil {
+				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+				return
+			}
+		*/
 
 		var requestMetric metrics.Metrics
-		if err := json.Unmarshal(requestBody, &requestMetric); err != nil {
+		if err := json.NewDecoder(r.Body).Decode(&requestMetric); err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
 		}

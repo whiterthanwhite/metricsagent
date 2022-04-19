@@ -36,7 +36,6 @@ func TestUpdateMetricHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, tt.target, nil)
-			log.Println(request.URL)
 			w := httptest.NewRecorder()
 			h := http.HandlerFunc(UpdateMetricHandler(oldMetrics, newMetrics))
 			h.ServeHTTP(w, request)
