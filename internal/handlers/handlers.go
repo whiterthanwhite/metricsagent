@@ -280,6 +280,7 @@ func getRequestBody(r *http.Request) ([]byte, error) {
 // test handlers
 func UpdateMetricOnServerTemp(serverMetrics map[string]metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		//
 		requestBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
