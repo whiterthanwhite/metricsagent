@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -189,7 +190,14 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 		log.Println(string(requestBody))
 
 		var requestMetric metrics.Metrics
-		if err := json.Unmarshal(requestBody, &requestMetric); err != nil {
+		/*
+			if err := json.Unmarshal(requestBody, &requestMetric); err != nil {
+				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+				return
+			}
+		*/
+		if err := json.NewDecoder(bytes.NewBuffer(requestBody)).Decode(&requestMetric); err != nil {
+			log.Println(string(requestBody))
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
 		}
