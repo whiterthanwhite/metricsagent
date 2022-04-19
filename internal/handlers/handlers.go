@@ -145,10 +145,10 @@ func GetAllMetricsFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc
 	}
 }
 
-func GetMetricFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
+func GetMetricFromServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		tempServerMetrics := *serverMetrics
 		log.Println("GetMetricFromServer")
-		log.Println(serverMetrics)
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
 			return
@@ -169,7 +169,7 @@ func GetMetricFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
 		}
 		for i := 0; i < len(requestedMetrics); i++ {
 			requestedMetric := &requestedMetrics[i]
-			for _, serverMetric := range serverMetrics {
+			for _, serverMetric := range tempServerMetrics {
 				log.Println(serverMetric)
 				if serverMetric.ID == (*requestedMetric).ID && serverMetric.MType == (*requestedMetric).MType {
 					(*requestedMetric).Delta = serverMetric.Delta
