@@ -13,7 +13,7 @@ import (
 
 func getTempServerMetrics() map[string]metrics.Metrics {
 	var a int64 = 0
-	var b float64 = 0.0
+	b := 0.0
 	ms := make(map[string]metrics.Metrics)
 	ms["PollCount"] = metrics.Metrics{ID: "PollCount", MType: metrics.CounterType, Delta: &a}
 	ms["Alloc"] = metrics.Metrics{ID: "Alloc", MType: metrics.GaugeType, Value: &b}
