@@ -306,7 +306,6 @@ func UpdateMetricOnServerTemp(serverMetrics map[string]metrics.NewMetric) http.H
 
 func GetMetricFromServerTemp(serverMetrics map[string]metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		log.Println(r)
 		serverMetrics := make(map[string]metrics.NewMetric)
 		serverMetrics["PollCount"] = metrics.NewMetric{
 			ID:    "PollCount",
@@ -341,6 +340,7 @@ func GetMetricFromServerTemp(serverMetrics map[string]metrics.NewMetric) http.Ha
 
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
+		log.Println("returnmetric: ", string(returnMetric))
 		rw.Write(returnMetric)
 	}
 }
