@@ -275,3 +275,16 @@ func getRequestBody(r *http.Request) ([]byte, error) {
 	defer r.Body.Close()
 	return requestBody, nil
 }
+
+// test handlers
+func UpdateMetricOnServerTemp() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		log.Println(r)
+	}
+}
+
+func GetMetricFromServerTemp() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		log.Println(r)
+	}
+}

@@ -46,8 +46,8 @@ func main() {
 		// r.Post("/", handlers.GetAllMetricsFromServer(serverMetrics))
 		// r.Post("/update/", handlers.UpdateMetricOnServer(&serverMetrics))
 		// r.Post("/value/", handlers.GetMetricFromServer(&serverMetrics))
-		r.Post("/update/", nil)
-		r.Post("/value/", nil)
+		r.Post("/update/", handlers.UpdateMetricOnServerTemp())
+		r.Post("/value/", handlers.GetMetricFromServerTemp())
 	})
 
 	log.Fatal(http.ListenAndServe(":8080", r))
