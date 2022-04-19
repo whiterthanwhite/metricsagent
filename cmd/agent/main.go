@@ -51,8 +51,8 @@ func getMetricURLString(m metrics.Metric) string {
 	return stringURL
 }
 
-func createNewNetric(oldM metrics.Metric) metrics.NewMetric {
-	newM := metrics.NewMetric{
+func createNewNetric(oldM metrics.Metric) metrics.Metrics {
+	newM := metrics.Metrics{
 		ID:    oldM.GetName(),
 		MType: oldM.GetTypeName(),
 	}

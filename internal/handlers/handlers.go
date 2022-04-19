@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -13,10 +12,9 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
-	"github.com/whiterthanwhite/metricsagent/internal/storage"
 )
 
-func UpdateMetricHandler(f *os.File, addedMetrics map[string]metrics.Metric) http.HandlerFunc {
+func UpdateMetricHandler(addedMetrics map[string]metrics.Metric, newMetrics map[string]metrics.Metrics) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		mName := chi.URLParam(r, "metricName")
 		mType := chi.URLParam(r, "metricType")
@@ -58,7 +56,27 @@ func UpdateMetricHandler(f *os.File, addedMetrics map[string]metrics.Metric) htt
 		}
 
 		addedMetrics[m.GetName()] = m
-		storage.WriteMetricsToFile(f, addedMetrics)
+		nM, ok := newMetrics[m.GetName()]
+		if !ok {
+			tempMetric := metrics.Metrics{
+				ID:    m.GetName(),
+				MType: m.GetTypeName(),
+			}
+			switch v := m.GetValue().(type) {
+			case int64:
+				tempMetric.Delta = &v
+			case float64:
+				tempMetric.Value = &v
+			}
+			newMetrics[tempMetric.ID] = tempMetric
+		} else {
+			switch v := m.GetValue().(type) {
+			case int64:
+				nM.Delta = &v
+			case float64:
+				nM.Value = &v
+			}
+		}
 
 		rw.Header().Add("Content-Type", "text/plain")
 		rw.WriteHeader(http.StatusOK)
@@ -127,7 +145,7 @@ func responseWriterWriteCheck(rw http.ResponseWriter, v []byte) {
 }
 
 // new functions
-func GetAllMetricsFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc {
+func GetAllMetricsFromServer(serverMetrics []metrics.Metrics) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
@@ -146,139 +164,7 @@ func GetAllMetricsFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc
 	}
 }
 
-func GetMetricFromServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
-	return func(rw http.ResponseWriter, r *http.Request) {
-		log.Println("GetMetricFromServer")
-		/*
-			tempServerMetrics := *serverMetrics
-			log.Println(tempServerMetrics)
-
-			if r.Header.Get("Content-Type") != "application/json" {
-				http.Error(rw, "", http.StatusBadRequest)
-				return
-			}
-
-			requestBodyBytes, err := getRequestBody(r)
-			if err != nil {
-				http.Error(rw, fmt.Sprint(err), http.StatusBadRequest)
-				return
-			}
-			log.Println(string(requestBodyBytes))
-
-			if len(requestBodyBytes) == 0 {
-				http.Error(rw, "", http.StatusBadRequest)
-				return
-			}
-
-			var rM metrics.NewMetric
-			if err := json.Unmarshal(requestBodyBytes, &rM); err != nil {
-				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-				return
-			}
-			log.Println("After unmarshal: ", rM)
-
-			for _, tempServerMetric := range tempServerMetrics {
-				if rM.ID == tempServerMetric.ID && rM.MType == tempServerMetric.MType {
-					rM.Delta = tempServerMetric.Delta
-					rM.Value = tempServerMetric.Value
-				}
-			}
-			log.Println("After update: ", rM)
-
-			bRM, err := json.Marshal(rM)
-			if err != nil {
-				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-				return
-			}
-			log.Println("Before sent back: ", string(bRM))
-
-		*/
-		var a int64 = 0
-		m1 := metrics.NewMetric{
-			ID:    "Metric 1",
-			MType: metrics.CounterType,
-			Delta: &a,
-		}
-		b1, err := json.Marshal(m1)
-		if err != nil {
-			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-			return
-		}
-
-		rw.Header().Set("Content-Type", "application/json")
-		// rw.Write(bRM)
-		rw.Write(b1)
-	}
-}
-
-func UpdateMetricOnServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
-	return func(rw http.ResponseWriter, r *http.Request) {
-		log.Println("UpdateMetricOnServer")
-		tempServerMetrics := *serverMetrics
-		// log.Println(tempServerMetrics)
-
-		if r.Header.Get("Content-Type") != "application/json" {
-			http.Error(rw, "", http.StatusBadRequest)
-			return
-		}
-
-		requestBodyBytes, err := getRequestBody(r)
-		if err != nil {
-			http.Error(rw, "", http.StatusBadRequest)
-			return
-		}
-		log.Println("Request body: ", string(requestBodyBytes))
-
-		if len(requestBodyBytes) == 0 {
-			http.Error(rw, "", http.StatusBadRequest)
-			return
-		}
-
-		var updateMetric metrics.NewMetric
-		if err := json.Unmarshal(requestBodyBytes, &updateMetric); err != nil {
-			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-			return
-		}
-		// log.Println(updateMetric)
-
-		mFound := false
-		for i := 0; i < len(tempServerMetrics); i++ {
-			if updateMetric.ID == tempServerMetrics[i].ID && updateMetric.MType == tempServerMetrics[i].MType {
-				if updateMetric.Delta != nil {
-					a := *tempServerMetrics[i].Delta
-					a++
-					tempServerMetrics[i].Delta = &a
-				}
-				tempServerMetrics[i].Value = updateMetric.Value
-				mFound = true
-			}
-		}
-		if !mFound {
-			if updateMetric.MType == metrics.CounterType && updateMetric.Delta == nil {
-				var mDelta int64 = 0
-				updateMetric.Delta = &mDelta
-				// log.Println(updateMetric)
-			}
-			tempServerMetrics = append(tempServerMetrics, updateMetric)
-		}
-
-		*serverMetrics = tempServerMetrics
-		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusOK)
-	}
-}
-
-func getRequestBody(r *http.Request) ([]byte, error) {
-	requestBody, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
-	}
-	defer r.Body.Close()
-	return requestBody, nil
-}
-
-// test handlers
-func UpdateMetricOnServerTemp(serverMetrics map[string]metrics.NewMetric) http.HandlerFunc {
+func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		requestBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -286,9 +172,8 @@ func UpdateMetricOnServerTemp(serverMetrics map[string]metrics.NewMetric) http.H
 			return
 		}
 		r.Body.Close()
-		log.Println("updatemetric: ", string(requestBody))
 
-		var requestMetric metrics.NewMetric
+		var requestMetric metrics.Metrics
 		if err := json.Unmarshal(requestBody, &requestMetric); err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
@@ -297,9 +182,7 @@ func UpdateMetricOnServerTemp(serverMetrics map[string]metrics.NewMetric) http.H
 		m, ok := serverMetrics[requestMetric.ID]
 		if !ok {
 			serverMetrics[requestMetric.ID] = requestMetric
-			log.Println("new metric: ", serverMetrics[requestMetric.ID])
 		} else {
-			log.Println("before update: ", m)
 			switch m.MType {
 			case metrics.CounterType:
 				mDelta := *m.Delta
@@ -308,7 +191,6 @@ func UpdateMetricOnServerTemp(serverMetrics map[string]metrics.NewMetric) http.H
 			case metrics.GaugeType:
 				m.Value = requestMetric.Value
 			}
-			log.Println("after update: ", m)
 			serverMetrics[requestMetric.ID] = m
 		}
 
@@ -317,7 +199,7 @@ func UpdateMetricOnServerTemp(serverMetrics map[string]metrics.NewMetric) http.H
 	}
 }
 
-func GetMetricFromServerTemp(serverMetrics map[string]metrics.NewMetric) http.HandlerFunc {
+func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		requestBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -325,9 +207,8 @@ func GetMetricFromServerTemp(serverMetrics map[string]metrics.NewMetric) http.Ha
 			return
 		}
 		r.Body.Close()
-		log.Println("getmetric: ", string(requestBody))
 
-		var requestMetric metrics.NewMetric
+		var requestMetric metrics.Metrics
 		if err := json.Unmarshal(requestBody, &requestMetric); err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
@@ -335,8 +216,7 @@ func GetMetricFromServerTemp(serverMetrics map[string]metrics.NewMetric) http.Ha
 
 		m, ok := serverMetrics[requestMetric.ID]
 		if !ok {
-			log.Println("metric not found: ", m, ok)
-			http.Error(rw, "", http.StatusBadRequest)
+			http.Error(rw, "metric is not found", http.StatusBadRequest)
 			return
 		}
 
@@ -347,7 +227,6 @@ func GetMetricFromServerTemp(serverMetrics map[string]metrics.NewMetric) http.Ha
 		}
 
 		rw.Header().Set("Content-Type", "application/json")
-		log.Println("returnmetric: ", string(returnMetric))
 		rw.Write(returnMetric)
 	}
 }

@@ -15,9 +15,9 @@ import (
 )
 
 func TestUpdateMetricOnServer(t *testing.T) {
-	serverMetrics := make([]metrics.NewMetric, 0)
+	serverMetrics := make(map[string]metrics.Metrics, 0)
 	type send struct {
-		m      metrics.NewMetric
+		m      metrics.Metrics
 		mDelta int64
 		mValue float64
 	}
@@ -29,7 +29,7 @@ func TestUpdateMetricOnServer(t *testing.T) {
 		{
 			name: "test 1",
 			send: send{
-				m:      metrics.NewMetric{ID: "Metric 1", MType: metrics.CounterType},
+				m:      metrics.Metrics{ID: "Metric 1", MType: metrics.CounterType},
 				mDelta: 1,
 				mValue: 0.0,
 			},
@@ -37,7 +37,7 @@ func TestUpdateMetricOnServer(t *testing.T) {
 		{
 			name: "test 2",
 			send: send{
-				m:      metrics.NewMetric{ID: "Metric 2", MType: metrics.CounterType},
+				m:      metrics.Metrics{ID: "Metric 2", MType: metrics.CounterType},
 				mDelta: 2,
 				mValue: 0.0,
 			},
@@ -45,7 +45,7 @@ func TestUpdateMetricOnServer(t *testing.T) {
 		{
 			name: "test 3",
 			send: send{
-				m:      metrics.NewMetric{ID: "Metric 3", MType: metrics.CounterType},
+				m:      metrics.Metrics{ID: "Metric 3", MType: metrics.CounterType},
 				mDelta: 2,
 				mValue: 0.0,
 			},
@@ -53,7 +53,7 @@ func TestUpdateMetricOnServer(t *testing.T) {
 		{
 			name: "test 4",
 			send: send{
-				m:      metrics.NewMetric{ID: "Metric 4", MType: metrics.GaugeType},
+				m:      metrics.Metrics{ID: "Metric 4", MType: metrics.GaugeType},
 				mDelta: 0,
 				mValue: 0.01,
 			},
@@ -61,7 +61,7 @@ func TestUpdateMetricOnServer(t *testing.T) {
 		{
 			name: "test 5",
 			send: send{
-				m:      metrics.NewMetric{ID: "Metric 4", MType: metrics.GaugeType},
+				m:      metrics.Metrics{ID: "Metric 4", MType: metrics.GaugeType},
 				mDelta: 0,
 				mValue: 0.02,
 			},
@@ -69,7 +69,7 @@ func TestUpdateMetricOnServer(t *testing.T) {
 		{
 			name: "test 6",
 			send: send{
-				m:      metrics.NewMetric{ID: "Metric 5", MType: metrics.GaugeType},
+				m:      metrics.Metrics{ID: "Metric 5", MType: metrics.GaugeType},
 				mDelta: 0,
 				mValue: 0.03,
 			},
@@ -77,7 +77,7 @@ func TestUpdateMetricOnServer(t *testing.T) {
 		{
 			name: "test 7",
 			send: send{
-				m:      metrics.NewMetric{ID: "Metric 6", MType: metrics.CounterType},
+				m:      metrics.Metrics{ID: "Metric 6", MType: metrics.CounterType},
 				mDelta: 0,
 				mValue: 0.0,
 			},
@@ -100,7 +100,7 @@ func TestUpdateMetricOnServer(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, "/update/", bytes.NewBuffer(rM))
 			request.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(UpdateMetricOnServer(&serverMetrics))
+			h := http.HandlerFunc(UpdateMetricOnServer(serverMetrics))
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			result.Body.Close()
@@ -109,22 +109,22 @@ func TestUpdateMetricOnServer(t *testing.T) {
 }
 
 func TestGetMetricFromServer(t *testing.T) {
-	serverMetricDelas := []int64{
+	serverMetricDeltas := []int64{
 		0,
 	}
-	serverMetrics := make([]metrics.NewMetric, 0)
-	serverMetrics = append(serverMetrics, metrics.NewMetric{
+	serverMetrics := make(map[string]metrics.Metrics, 0)
+	serverMetrics["Metric 1"] = metrics.Metrics{
 		ID:    "Metric 1",
 		MType: metrics.CounterType,
-		Delta: &serverMetricDelas[0],
-	})
+		Delta: &serverMetricDeltas[0],
+	}
 
 	type (
 		send struct {
-			m metrics.NewMetric
+			m metrics.Metrics
 		}
 		want struct {
-			m      metrics.NewMetric
+			m      metrics.Metrics
 			mDelta int64
 			mValue float64
 		}
@@ -138,10 +138,10 @@ func TestGetMetricFromServer(t *testing.T) {
 		{
 			name: "test 1",
 			send: send{
-				m: metrics.NewMetric{ID: "Metric 1", MType: metrics.CounterType},
+				m: metrics.Metrics{ID: "Metric 1", MType: metrics.CounterType},
 			},
 			want: want{
-				m:      metrics.NewMetric{ID: "Metric 1", MType: metrics.CounterType},
+				m:      metrics.Metrics{ID: "Metric 1", MType: metrics.CounterType},
 				mDelta: 0,
 				mValue: 0.0,
 			},
@@ -158,7 +158,7 @@ func TestGetMetricFromServer(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, "/value/", bytes.NewBuffer(rM))
 			request.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(GetMetricFromServer(&serverMetrics))
+			h := http.HandlerFunc(GetMetricFromServer(serverMetrics))
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()

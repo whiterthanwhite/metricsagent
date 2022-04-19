@@ -11,43 +11,45 @@ import (
 	"github.com/whiterthanwhite/metricsagent/internal/storage"
 )
 
-func getTempServerMetrics() map[string]metrics.NewMetric {
+func getTempServerMetrics() map[string]metrics.Metrics {
 	var a int64 = 0
 	var b float64 = 0.0
-	ms := make(map[string]metrics.NewMetric)
-	ms["PollCount"] = metrics.NewMetric{ID: "PollCount", MType: metrics.CounterType, Delta: &a}
-	ms["Alloc"] = metrics.NewMetric{ID: "Alloc", MType: metrics.GaugeType, Value: &b}
-	ms["BuckHashSys"] = metrics.NewMetric{ID: "BuckHashSys", MType: metrics.GaugeType, Value: &b}
-	ms["Frees"] = metrics.NewMetric{ID: "Frees", MType: metrics.GaugeType, Value: &b}
-	ms["GCCPUFraction"] = metrics.NewMetric{ID: "GCCPUFraction", MType: metrics.GaugeType, Value: &b}
-	ms["OtherSys"] = metrics.NewMetric{ID: "OtherSys", MType: metrics.GaugeType, Value: &b}
-	ms["GCSys"] = metrics.NewMetric{ID: "GCSys", MType: metrics.GaugeType, Value: &b}
-	ms["HeapAlloc"] = metrics.NewMetric{ID: "HeapAlloc", MType: metrics.GaugeType, Value: &b}
-	ms["HeapIdle"] = metrics.NewMetric{ID: "HeapIdle", MType: metrics.GaugeType, Value: &b}
-	ms["HeapInuse"] = metrics.NewMetric{ID: "HeapInuse", MType: metrics.GaugeType, Value: &b}
-	ms["HeapObjects"] = metrics.NewMetric{ID: "HeapObjects", MType: metrics.GaugeType, Value: &b}
-	ms["HeapReleased"] = metrics.NewMetric{ID: "HeapReleased", MType: metrics.GaugeType, Value: &b}
-	ms["HeapSys"] = metrics.NewMetric{ID: "HeapSys", MType: metrics.GaugeType, Value: &b}
-	ms["LastGC"] = metrics.NewMetric{ID: "LastGC", MType: metrics.GaugeType, Value: &b}
-	ms["Lookups"] = metrics.NewMetric{ID: "Lookups", MType: metrics.GaugeType, Value: &b}
-	ms["MCacheInuse"] = metrics.NewMetric{ID: "MCacheInuse", MType: metrics.GaugeType, Value: &b}
-	ms["MCacheSys"] = metrics.NewMetric{ID: "MCacheSys", MType: metrics.GaugeType, Value: &b}
-	ms["MSpanInuse"] = metrics.NewMetric{ID: "MSpanInuse", MType: metrics.GaugeType, Value: &b}
-	ms["MSpanSys"] = metrics.NewMetric{ID: "MSpanSys", MType: metrics.GaugeType, Value: &b}
-	ms["Mallocs"] = metrics.NewMetric{ID: "Mallocs", MType: metrics.GaugeType, Value: &b}
-	ms["NextGC"] = metrics.NewMetric{ID: "NextGC", MType: metrics.GaugeType, Value: &b}
-	ms["NumForcedGC"] = metrics.NewMetric{ID: "NumForcedGC", MType: metrics.GaugeType, Value: &b}
-	ms["NumGC"] = metrics.NewMetric{ID: "NumGC", MType: metrics.GaugeType, Value: &b}
-	ms["PauseTotalNs"] = metrics.NewMetric{ID: "PauseTotalNs", MType: metrics.GaugeType, Value: &b}
-	ms["StackInuse"] = metrics.NewMetric{ID: "StackInuse", MType: metrics.GaugeType, Value: &b}
-	ms["StackSys"] = metrics.NewMetric{ID: "StackSys", MType: metrics.GaugeType, Value: &b}
-	ms["Sys"] = metrics.NewMetric{ID: "Sys", MType: metrics.GaugeType, Value: &b}
-	ms["TotalAlloc"] = metrics.NewMetric{ID: "TotalAlloc", MType: metrics.GaugeType, Value: &b}
-	ms["RandomValue"] = metrics.NewMetric{ID: "RandomValue", MType: metrics.GaugeType, Value: &b}
+	ms := make(map[string]metrics.Metrics)
+	ms["PollCount"] = metrics.Metrics{ID: "PollCount", MType: metrics.CounterType, Delta: &a}
+	ms["Alloc"] = metrics.Metrics{ID: "Alloc", MType: metrics.GaugeType, Value: &b}
+	ms["BuckHashSys"] = metrics.Metrics{ID: "BuckHashSys", MType: metrics.GaugeType, Value: &b}
+	ms["Frees"] = metrics.Metrics{ID: "Frees", MType: metrics.GaugeType, Value: &b}
+	ms["GCCPUFraction"] = metrics.Metrics{ID: "GCCPUFraction", MType: metrics.GaugeType, Value: &b}
+	ms["OtherSys"] = metrics.Metrics{ID: "OtherSys", MType: metrics.GaugeType, Value: &b}
+	ms["GCSys"] = metrics.Metrics{ID: "GCSys", MType: metrics.GaugeType, Value: &b}
+	ms["HeapAlloc"] = metrics.Metrics{ID: "HeapAlloc", MType: metrics.GaugeType, Value: &b}
+	ms["HeapIdle"] = metrics.Metrics{ID: "HeapIdle", MType: metrics.GaugeType, Value: &b}
+	ms["HeapInuse"] = metrics.Metrics{ID: "HeapInuse", MType: metrics.GaugeType, Value: &b}
+	ms["HeapObjects"] = metrics.Metrics{ID: "HeapObjects", MType: metrics.GaugeType, Value: &b}
+	ms["HeapReleased"] = metrics.Metrics{ID: "HeapReleased", MType: metrics.GaugeType, Value: &b}
+	ms["HeapSys"] = metrics.Metrics{ID: "HeapSys", MType: metrics.GaugeType, Value: &b}
+	ms["LastGC"] = metrics.Metrics{ID: "LastGC", MType: metrics.GaugeType, Value: &b}
+	ms["Lookups"] = metrics.Metrics{ID: "Lookups", MType: metrics.GaugeType, Value: &b}
+	ms["MCacheInuse"] = metrics.Metrics{ID: "MCacheInuse", MType: metrics.GaugeType, Value: &b}
+	ms["MCacheSys"] = metrics.Metrics{ID: "MCacheSys", MType: metrics.GaugeType, Value: &b}
+	ms["MSpanInuse"] = metrics.Metrics{ID: "MSpanInuse", MType: metrics.GaugeType, Value: &b}
+	ms["MSpanSys"] = metrics.Metrics{ID: "MSpanSys", MType: metrics.GaugeType, Value: &b}
+	ms["Mallocs"] = metrics.Metrics{ID: "Mallocs", MType: metrics.GaugeType, Value: &b}
+	ms["NextGC"] = metrics.Metrics{ID: "NextGC", MType: metrics.GaugeType, Value: &b}
+	ms["NumForcedGC"] = metrics.Metrics{ID: "NumForcedGC", MType: metrics.GaugeType, Value: &b}
+	ms["NumGC"] = metrics.Metrics{ID: "NumGC", MType: metrics.GaugeType, Value: &b}
+	ms["PauseTotalNs"] = metrics.Metrics{ID: "PauseTotalNs", MType: metrics.GaugeType, Value: &b}
+	ms["StackInuse"] = metrics.Metrics{ID: "StackInuse", MType: metrics.GaugeType, Value: &b}
+	ms["StackSys"] = metrics.Metrics{ID: "StackSys", MType: metrics.GaugeType, Value: &b}
+	ms["Sys"] = metrics.Metrics{ID: "Sys", MType: metrics.GaugeType, Value: &b}
+	ms["TotalAlloc"] = metrics.Metrics{ID: "TotalAlloc", MType: metrics.GaugeType, Value: &b}
+	ms["RandomValue"] = metrics.Metrics{ID: "RandomValue", MType: metrics.GaugeType, Value: &b}
 	return ms
 }
 
 func main() {
+	serverMetrics := getTempServerMetrics()
+
 	metricFile := storage.OpenMetricFileCSV()
 	defer metricFile.Close()
 
@@ -59,25 +61,19 @@ func main() {
 
 	r := chi.NewRouter()
 
-	// serverMetrics := metrics.GetAllMetricsSlices()
-	tempServerMetrics := getTempServerMetrics()
-	log.Println(tempServerMetrics)
-
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlers.GetAllMetricsFromFile(addedMetrics))
 		r.Route("/update", func(r chi.Router) {
 			r.Post("/{metricType}/{metricName}/{metricValue}",
-				handlers.UpdateMetricHandler(metricFile, addedMetrics))
+				handlers.UpdateMetricHandler(addedMetrics, serverMetrics))
 		})
 		r.Route("/value", func(r chi.Router) {
 			r.Get("/{metricType}/{metricName}",
 				handlers.GetMetricValueFromServer(metricFile, addedMetrics))
 		})
 		// r.Post("/", handlers.GetAllMetricsFromServer(serverMetrics))
-		// r.Post("/update/", handlers.UpdateMetricOnServer(&serverMetrics))
-		// r.Post("/value/", handlers.GetMetricFromServer(&serverMetrics))
-		r.Post("/update/", handlers.UpdateMetricOnServerTemp(tempServerMetrics))
-		r.Post("/value/", handlers.GetMetricFromServerTemp(tempServerMetrics))
+		r.Post("/update/", handlers.UpdateMetricOnServer(serverMetrics))
+		r.Post("/value/", handlers.GetMetricFromServer(serverMetrics))
 	})
 
 	log.Fatal(http.ListenAndServe(":8080", r))
