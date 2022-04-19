@@ -175,12 +175,12 @@ func TestGetMetricFromServer(t *testing.T) {
 				tt.want.m.Value = &tt.want.mValue
 			}
 
-			expectedMetricJson, err := json.Marshal(tt.want.m)
+			expectedMetricJSON, err := json.Marshal(tt.want.m)
 			if err != nil {
 				panic(err)
 			}
 
-			assert.Equal(t, string(expectedMetricJson), string(rBody))
+			assert.Equal(t, string(expectedMetricJSON), string(rBody))
 		})
 	}
 }
