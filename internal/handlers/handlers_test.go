@@ -107,7 +107,7 @@ func TestGetMetricFromServer(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, tt.request, requestBodyBuffer)
 			request.Header.Set("Content-Type", tt.send.contentType)
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(GetMetricFromServer(tt.want.serverMetrics))
+			h := http.HandlerFunc(GetMetricFromServer(&tt.want.serverMetrics))
 			h.ServeHTTP(w, request)
 			result := w.Result()
 

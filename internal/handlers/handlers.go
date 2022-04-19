@@ -147,50 +147,51 @@ func GetAllMetricsFromServer(serverMetrics []metrics.NewMetric) http.HandlerFunc
 
 func GetMetricFromServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		tempServerMetrics := *serverMetrics
 		log.Println("GetMetricFromServer")
+		tempServerMetrics := *serverMetrics
+		log.Println(tempServerMetrics)
+
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
 			return
 		}
+
 		requestBodyBytes, err := getRequestBody(r)
 		if err != nil {
 			http.Error(rw, "", http.StatusBadRequest)
 			return
 		}
+		log.Println(string(requestBodyBytes))
+
 		if len(requestBodyBytes) == 0 {
 			http.Error(rw, "", http.StatusBadRequest)
 			return
 		}
-		requestedMetrics := make([]metrics.NewMetric, 0)
-		requestedMetrics = append(requestedMetrics, metrics.NewMetric{})
-		/*
-			if err := json.Unmarshal(requestBodyBytes, &requestedMetrics); err != nil {
-				http.Error(rw, "", http.StatusInternalServerError)
-				return
-			}
-		*/
-		if err := json.Unmarshal(requestBodyBytes, &requestedMetrics[0]); err != nil {
-			http.Error(rw, "", http.StatusInternalServerError)
+
+		var rM metrics.NewMetric
+		if err := json.Unmarshal(requestBodyBytes, &rM); err != nil {
+			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
 		}
-		for i := 0; i < len(requestedMetrics); i++ {
-			requestedMetric := &requestedMetrics[i]
-			for _, serverMetric := range tempServerMetrics {
-				log.Println(serverMetric)
-				if serverMetric.ID == (*requestedMetric).ID && serverMetric.MType == (*requestedMetric).MType {
-					(*requestedMetric).Delta = serverMetric.Delta
-					(*requestedMetric).Value = serverMetric.Value
-				}
+		log.Println(rM)
+
+		for _, tempServerMetric := range tempServerMetrics {
+			if rM.ID == tempServerMetric.ID && rM.MType == tempServerMetric.MType {
+				rM.Delta = tempServerMetric.Delta
+				rM.Value = tempServerMetric.Value
 			}
 		}
-		requestedMetricsBytes, err := json.Marshal(requestedMetrics)
+		log.Println(rM)
+
+		bRM, err := json.Marshal(rM)
 		if err != nil {
-			http.Error(rw, "", http.StatusInternalServerError)
+			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
 		}
+		log.Println(string(bRM))
+
 		rw.Header().Set("Content-Type", "application/json")
-		rw.Write(requestedMetricsBytes)
+		rw.Write(bRM)
 	}
 }
 
