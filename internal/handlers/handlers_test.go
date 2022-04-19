@@ -1,15 +1,15 @@
 package handlers
 
 import (
-	// "io/ioutil"
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	// "github.com/stretchr/testify/assert"
 	// "github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
 )
@@ -104,6 +104,83 @@ func TestUpdateMetricOnServer(t *testing.T) {
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			result.Body.Close()
+		})
+	}
+}
+
+func TestGetMetricFromServer(t *testing.T) {
+	serverMetricDelas := []int64{
+		0,
+	}
+	serverMetrics := make([]metrics.NewMetric, 0)
+	serverMetrics = append(serverMetrics, metrics.NewMetric{
+		ID:    "Metric 1",
+		MType: metrics.CounterType,
+		Delta: &serverMetricDelas[0],
+	})
+
+	type (
+		send struct {
+			m metrics.NewMetric
+		}
+		want struct {
+			m      metrics.NewMetric
+			mDelta int64
+			mValue float64
+		}
+	)
+
+	tests := []struct {
+		name string
+		send send
+		want want
+	}{
+		{
+			name: "test 1",
+			send: send{
+				m: metrics.NewMetric{ID: "Metric 1", MType: metrics.CounterType},
+			},
+			want: want{
+				m:      metrics.NewMetric{ID: "Metric 1", MType: metrics.CounterType},
+				mDelta: 0,
+				mValue: 0.0,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rM, err := json.Marshal(tt.send.m)
+			if err != nil {
+				panic(err)
+			}
+
+			request := httptest.NewRequest(http.MethodPost, "/value/", bytes.NewBuffer(rM))
+			request.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+			h := http.HandlerFunc(GetMetricFromServer(&serverMetrics))
+			h.ServeHTTP(w, request)
+			result := w.Result()
+			defer result.Body.Close()
+
+			rBody, err := ioutil.ReadAll(result.Body)
+			if err != nil {
+				panic(err)
+			}
+
+			switch tt.want.m.MType {
+			case metrics.CounterType:
+				tt.want.m.Delta = &tt.want.mDelta
+			case metrics.GaugeType:
+				tt.want.m.Value = &tt.want.mValue
+			}
+
+			expectedMetricJson, err := json.Marshal(tt.want.m)
+			if err != nil {
+				panic(err)
+			}
+
+			assert.Equal(t, string(expectedMetricJson), string(rBody))
 		})
 	}
 }

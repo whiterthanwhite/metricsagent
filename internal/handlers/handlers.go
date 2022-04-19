@@ -158,13 +158,13 @@ func GetMetricFromServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 
 		requestBodyBytes, err := getRequestBody(r)
 		if err != nil {
-			http.Error(rw, "", http.StatusBadRequest)
+			http.Error(rw, fmt.Sprint(err), http.StatusBadRequest)
 			return
 		}
 		log.Println(string(requestBodyBytes))
 
 		if len(requestBodyBytes) == 0 {
-			http.Error(rw, "", http.StatusBadRequest)
+			http.Error(rw, fmt.Sprint(err), http.StatusBadRequest)
 			return
 		}
 
@@ -173,7 +173,7 @@ func GetMetricFromServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
 		}
-		log.Println(rM)
+		log.Println("After unmarshal: ", rM)
 
 		for _, tempServerMetric := range tempServerMetrics {
 			if rM.ID == tempServerMetric.ID && rM.MType == tempServerMetric.MType {
@@ -181,14 +181,14 @@ func GetMetricFromServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 				rM.Value = tempServerMetric.Value
 			}
 		}
-		log.Println(rM)
+		log.Println("After update: ", rM)
 
 		bRM, err := json.Marshal(rM)
 		if err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
 		}
-		log.Println(string(bRM))
+		log.Println("Before sent back: ", string(bRM))
 
 		rw.Header().Set("Content-Type", "application/json")
 		rw.Write(bRM)
