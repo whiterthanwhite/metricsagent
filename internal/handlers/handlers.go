@@ -252,10 +252,9 @@ func UpdateMetricOnServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 
 func getRequestBody(r *http.Request) ([]byte, error) {
 	requestBody, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 	if err != nil {
 		return nil, err
 	}
-	log.Println(string(requestBody))
+	defer r.Body.Close()
 	return requestBody, nil
 }
