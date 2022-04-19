@@ -124,6 +124,29 @@ func GetAllMetrics() map[string]Metric {
 	return metrics
 }
 
+func GetAllMetricsSlices() []NewMetric {
+	metricDescriptions := GetStandardMetrics()
+	ms := make([]NewMetric, 0)
+	for _, mDescription := range metricDescriptions {
+		var mDelta int64 = 0
+		var mValue float64 = 0
+
+		m := NewMetric{
+			ID:    mDescription.MName,
+			MType: mDescription.MType,
+		}
+		switch m.MType {
+		case GaugeType:
+			m.Value = &mValue
+		case CounterType:
+			m.Delta = &mDelta
+		}
+
+		ms = append(ms, m)
+	}
+	return ms
+}
+
 func GetMetric(name string, mType string) Metric {
 	mt := metrictype(mType)
 	return createMetric(name, mt)

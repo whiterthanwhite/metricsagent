@@ -23,7 +23,7 @@ func main() {
 
 	r := chi.NewRouter()
 
-	serverMetrics := make([]metrics.NewMetric, 0)
+	serverMetrics := metrics.GetAllMetricsSlices()
 	// Debug >>
 	var pollCountVal int64 = 0
 	serverMetrics = append(serverMetrics, metrics.NewMetric{
