@@ -11,6 +11,7 @@ func GetStandardMetrics() map[string]MetricDescription {
 	metricDescriptions["BuckHashSys"] = MetricDescription{MName: "BuckHashSys", MType: GaugeType}
 	metricDescriptions["Frees"] = MetricDescription{MName: "Frees", MType: GaugeType}
 	metricDescriptions["GCCPUFraction"] = MetricDescription{MName: "GCCPUFraction", MType: GaugeType}
+	metricDescriptions["OtherSys"] = MetricDescription{MName: "OtherSys", MType: GaugeType}
 	metricDescriptions["GCSys"] = MetricDescription{MName: "GCSys", MType: GaugeType}
 	metricDescriptions["HeapAlloc"] = MetricDescription{MName: "HeapAlloc", MType: GaugeType}
 	metricDescriptions["HeapIdle"] = MetricDescription{MName: "HeapIdle", MType: GaugeType}
