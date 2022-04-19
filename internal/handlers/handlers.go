@@ -280,11 +280,15 @@ func getRequestBody(r *http.Request) ([]byte, error) {
 func UpdateMetricOnServerTemp() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		log.Println(r)
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusOK)
 	}
 }
 
 func GetMetricFromServerTemp() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		log.Println(r)
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusOK)
 	}
 }
