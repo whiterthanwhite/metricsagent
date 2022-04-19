@@ -226,7 +226,11 @@ func UpdateMetricOnServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 		mFound := false
 		for i := 0; i < len(tempServerMetrics); i++ {
 			if updateMetric.ID == tempServerMetrics[i].ID && updateMetric.MType == tempServerMetrics[i].MType {
-				tempServerMetrics[i].Delta = updateMetric.Delta
+				if updateMetric.Delta != nil {
+					var a int64 = *tempServerMetrics[i].Delta
+					a++
+					tempServerMetrics[i].Delta = &a
+				}
 				tempServerMetrics[i].Value = updateMetric.Value
 				mFound = true
 			}
