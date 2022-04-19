@@ -278,8 +278,9 @@ func getRequestBody(r *http.Request) ([]byte, error) {
 }
 
 // test handlers
-func UpdateMetricOnServerTemp(serverMetrics map[string]metrics.NewMetric) http.HandlerFunc {
+func UpdateMetricOnServerTemp(serverMetrics *map[string]metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		tempServerMetrics := *serverMetrics
 		requestBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
@@ -294,10 +295,10 @@ func UpdateMetricOnServerTemp(serverMetrics map[string]metrics.NewMetric) http.H
 			return
 		}
 
-		m, ok := serverMetrics[requestMetric.ID]
+		m, ok := tempServerMetrics[requestMetric.ID]
 		if !ok {
-			serverMetrics[requestMetric.ID] = requestMetric
-			log.Println("new metric: ", serverMetrics[requestMetric.ID])
+			tempServerMetrics[requestMetric.ID] = requestMetric
+			log.Println("new metric: ", tempServerMetrics[requestMetric.ID])
 		} else {
 			log.Println("before update: ", m)
 			switch m.MType {
@@ -309,15 +310,16 @@ func UpdateMetricOnServerTemp(serverMetrics map[string]metrics.NewMetric) http.H
 				m.Value = requestMetric.Value
 			}
 			log.Println("after update: ", m)
-			serverMetrics[requestMetric.ID] = m
+			tempServerMetrics[requestMetric.ID] = m
 		}
 
+		*serverMetrics = tempServerMetrics
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
 	}
 }
 
-func GetMetricFromServerTemp(serverMetrics map[string]metrics.NewMetric) http.HandlerFunc {
+func GetMetricFromServerTemp(serverMetrics *map[string]metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		serverMetrics := make(map[string]metrics.NewMetric)
 		serverMetrics["PollCount"] = metrics.NewMetric{
