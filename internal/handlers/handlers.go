@@ -199,7 +199,7 @@ func UpdateMetricOnServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		log.Println("UpdateMetricOnServer")
 		tempServerMetrics := *serverMetrics
-		log.Println(tempServerMetrics)
+		// log.Println(tempServerMetrics)
 
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
@@ -209,7 +209,7 @@ func UpdateMetricOnServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 		if err != nil {
 			http.Error(rw, "", http.StatusBadRequest)
 		}
-		log.Println(string(requestBodyBytes))
+		log.Println("Request body: ", string(requestBodyBytes))
 
 		if len(requestBodyBytes) == 0 {
 			http.Error(rw, "", http.StatusBadRequest)
@@ -221,13 +221,13 @@ func UpdateMetricOnServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
 		}
-		log.Println(updateMetric)
+		// log.Println(updateMetric)
 
 		mFound := false
 		for i := 0; i < len(tempServerMetrics); i++ {
 			if updateMetric.ID == tempServerMetrics[i].ID && updateMetric.MType == tempServerMetrics[i].MType {
 				if updateMetric.Delta != nil {
-					var a int64 = *tempServerMetrics[i].Delta
+					a := *tempServerMetrics[i].Delta
 					a++
 					tempServerMetrics[i].Delta = &a
 				}
@@ -239,7 +239,7 @@ func UpdateMetricOnServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 			if updateMetric.MType == metrics.CounterType && updateMetric.Delta == nil {
 				var mDelta int64 = 0
 				updateMetric.Delta = &mDelta
-				log.Println(updateMetric)
+				// log.Println(updateMetric)
 			}
 			tempServerMetrics = append(tempServerMetrics, updateMetric)
 		}
