@@ -60,6 +60,7 @@ func main() {
 
 	// serverMetrics := metrics.GetAllMetricsSlices()
 	tempServerMetrics := getTempServerMetrics()
+	log.Println(tempServerMetrics)
 
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlers.GetAllMetricsFromFile(addedMetrics))
