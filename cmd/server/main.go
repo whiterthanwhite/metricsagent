@@ -20,6 +20,7 @@ func getTempServerMetrics() map[string]metrics.NewMetric {
 	ms["BuckHashSys"] = metrics.NewMetric{ID: "BuckHashSys", MType: metrics.GaugeType, Value: &b}
 	ms["Frees"] = metrics.NewMetric{ID: "Frees", MType: metrics.GaugeType, Value: &b}
 	ms["GCCPUFraction"] = metrics.NewMetric{ID: "GCCPUFraction", MType: metrics.GaugeType, Value: &b}
+	ms["OtherSys"] = metrics.NewMetric{ID: "OtherSys", MType: metrics.GaugeType, Value: &b}
 	ms["GCSys"] = metrics.NewMetric{ID: "GCSys", MType: metrics.GaugeType, Value: &b}
 	ms["HeapAlloc"] = metrics.NewMetric{ID: "HeapAlloc", MType: metrics.GaugeType, Value: &b}
 	ms["HeapIdle"] = metrics.NewMetric{ID: "HeapIdle", MType: metrics.GaugeType, Value: &b}
