@@ -78,6 +78,7 @@ func UpdateMetricHandler(addedMetrics map[string]metrics.Metric, newMetrics map[
 			}
 		}
 
+		log.Println(m, nM)
 		rw.Header().Add("Content-Type", "text/plain")
 		rw.WriteHeader(http.StatusOK)
 	}
