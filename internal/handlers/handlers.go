@@ -233,6 +233,7 @@ func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerF
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
 		}
+		r.Body.Close()
 
 		m, ok := serverMetrics[requestMetric.ID]
 		if !ok {
