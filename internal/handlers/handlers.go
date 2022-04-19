@@ -3,7 +3,8 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+
+	//"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -178,18 +179,27 @@ func GetAllMetricsFromServer(serverMetrics []metrics.Metrics) http.HandlerFunc {
 
 func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		requestBody, err := ioutil.ReadAll(r.Body)
-		if err != nil {
+		/*
+			requestBody, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+				return
+			}
+			r.Body.Close()
+
+			var requestMetric metrics.Metrics
+			if err := json.Unmarshal(requestBody, &requestMetric); err != nil {
+				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+				return
+			}
+		*/
+
+		var requestMetric metrics.Metrics
+		if err := json.NewDecoder(r.Body).Decode(&requestMetric); err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
 		}
 		r.Body.Close()
-
-		var requestMetric metrics.Metrics
-		if err := json.Unmarshal(requestBody, &requestMetric); err != nil {
-			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-			return
-		}
 
 		m, ok := serverMetrics[requestMetric.ID]
 		if !ok {
