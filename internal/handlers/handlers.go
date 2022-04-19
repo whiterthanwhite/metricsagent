@@ -280,13 +280,13 @@ func getRequestBody(r *http.Request) ([]byte, error) {
 // test handlers
 func UpdateMetricOnServerTemp(serverMetrics map[string]metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		log.Println(r)
 		requestBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
 		}
 		r.Body.Close()
+		log.Println("updatemetric: ", string(requestBody))
 
 		var requestMetric metrics.NewMetric
 		if err := json.Unmarshal(requestBody, &requestMetric); err != nil {
@@ -319,6 +319,7 @@ func GetMetricFromServerTemp(serverMetrics map[string]metrics.NewMetric) http.Ha
 			return
 		}
 		r.Body.Close()
+		log.Println("getmetric: ", string(requestBody))
 
 		var requestMetric metrics.NewMetric
 		if err := json.Unmarshal(requestBody, &requestMetric); err != nil {
