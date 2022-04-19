@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -277,18 +278,68 @@ func getRequestBody(r *http.Request) ([]byte, error) {
 }
 
 // test handlers
-func UpdateMetricOnServerTemp() http.HandlerFunc {
+func UpdateMetricOnServerTemp(serverMetrics map[string]metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		log.Println(r)
+		requestBody, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+			return
+		}
+		r.Body.Close()
+
+		var requestMetric metrics.NewMetric
+		if err := json.Unmarshal(requestBody, &requestMetric); err != nil {
+			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+			return
+		}
+
+		_, ok := serverMetrics[requestMetric.ID]
+		if !ok {
+			serverMetrics[requestMetric.ID] = requestMetric
+		}
+
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
 	}
 }
 
-func GetMetricFromServerTemp() http.HandlerFunc {
+func GetMetricFromServerTemp(serverMetrics map[string]metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		log.Println(r)
+		serverMetrics := make(map[string]metrics.NewMetric)
+		serverMetrics["PollCount"] = metrics.NewMetric{
+			ID:    "PollCount",
+			MType: metrics.CounterType,
+		}
+
+		requestBody, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+			return
+		}
+		r.Body.Close()
+
+		var requestMetric metrics.NewMetric
+		if err := json.Unmarshal(requestBody, &requestMetric); err != nil {
+			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+			return
+		}
+
+		m, ok := serverMetrics[requestMetric.ID]
+		if !ok {
+			http.Error(rw, "", http.StatusBadRequest)
+			return
+		}
+
+		returnMetric, err := json.Marshal(m)
+		if err != nil {
+			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+			return
+		}
+
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
+		rw.Write(returnMetric)
 	}
 }

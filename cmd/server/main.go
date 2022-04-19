@@ -11,6 +11,12 @@ import (
 	"github.com/whiterthanwhite/metricsagent/internal/storage"
 )
 
+func getTempServerMetrics() map[string]metrics.NewMetric {
+	ms := make(map[string]metrics.NewMetric)
+	ms["PollCount"] = metrics.NewMetric{ID: "PollCount", MType: metrics.CounterType}
+	return ms
+}
+
 func main() {
 	metricFile := storage.OpenMetricFileCSV()
 	defer metricFile.Close()
@@ -23,15 +29,8 @@ func main() {
 
 	r := chi.NewRouter()
 
-	serverMetrics := metrics.GetAllMetricsSlices()
-	// Debug >>
-	var pollCountVal int64 = 0
-	serverMetrics = append(serverMetrics, metrics.NewMetric{
-		ID:    "PollCount",
-		MType: metrics.CounterType,
-		Delta: &pollCountVal,
-	})
-	// Debug <<
+	// serverMetrics := metrics.GetAllMetricsSlices()
+	tempServerMetrics := getTempServerMetrics()
 
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlers.GetAllMetricsFromFile(addedMetrics))
@@ -46,8 +45,8 @@ func main() {
 		// r.Post("/", handlers.GetAllMetricsFromServer(serverMetrics))
 		// r.Post("/update/", handlers.UpdateMetricOnServer(&serverMetrics))
 		// r.Post("/value/", handlers.GetMetricFromServer(&serverMetrics))
-		r.Post("/update/", handlers.UpdateMetricOnServerTemp())
-		r.Post("/value/", handlers.GetMetricFromServerTemp())
+		r.Post("/update/", handlers.UpdateMetricOnServerTemp(tempServerMetrics))
+		r.Post("/value/", handlers.GetMetricFromServerTemp(tempServerMetrics))
 	})
 
 	log.Fatal(http.ListenAndServe(":8080", r))
