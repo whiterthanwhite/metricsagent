@@ -197,45 +197,47 @@ func GetMetricFromServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 
 func UpdateMetricOnServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		log.Println("UpdateMetricOnServer")
+		tempServerMetrics := *serverMetrics
+		log.Println(tempServerMetrics)
+
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
 		}
+
 		requestBodyBytes, err := getRequestBody(r)
 		if err != nil {
 			http.Error(rw, "", http.StatusBadRequest)
 		}
-		var updateMetrics []metrics.NewMetric
-		if err := json.Unmarshal(requestBodyBytes, &updateMetrics); err != nil {
-			http.Error(rw, "", http.StatusInternalServerError)
-			return
-		}
-		if len(updateMetrics) == 0 {
+		log.Println(string(requestBodyBytes))
+
+		if len(requestBodyBytes) == 0 {
 			http.Error(rw, "", http.StatusBadRequest)
 			return
 		}
-		tempMetrics := *serverMetrics
-		for i := 0; i < len(updateMetrics); i++ {
-			updateMetric := updateMetrics[i]
-			metricFound := false
-			for j := 0; j < len(tempMetrics); j++ {
-				serverMetric := &tempMetrics[i]
-				if (*serverMetric).ID == updateMetric.ID && (*serverMetric).MType == updateMetric.MType {
-					serverMetric.Delta = updateMetric.Delta
-					serverMetric.Value = updateMetric.Value
-					metricFound = true
-				}
-			}
-			if !metricFound {
-				tempMetrics = append(tempMetrics, metrics.NewMetric{
-					ID:    updateMetric.ID,
-					MType: updateMetric.MType,
-					Delta: updateMetric.Delta,
-					Value: updateMetric.Value,
-				})
+
+		var updateMetric metrics.NewMetric
+		if err := json.Unmarshal(requestBodyBytes, &updateMetric); err != nil {
+			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+			return
+		}
+		log.Println(updateMetric)
+
+		mFound := false
+		for _, tempServerMetric := range tempServerMetrics {
+			if updateMetric.ID == tempServerMetric.ID && updateMetric.MType == tempServerMetric.MType {
+				tempServerMetric.Delta = updateMetric.Delta
+				tempServerMetric.Value = updateMetric.Value
+				mFound = true
 			}
 		}
-		*serverMetrics = tempMetrics
+		if !mFound {
+			tempServerMetrics = append(tempServerMetrics, updateMetric)
+		}
+
+		*serverMetrics = tempServerMetrics
 		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusOK)
 	}
 }
 
