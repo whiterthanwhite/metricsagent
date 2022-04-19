@@ -208,6 +208,7 @@ func UpdateMetricOnServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 		requestBodyBytes, err := getRequestBody(r)
 		if err != nil {
 			http.Error(rw, "", http.StatusBadRequest)
+			return
 		}
 		log.Println("Request body: ", string(requestBodyBytes))
 
