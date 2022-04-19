@@ -294,9 +294,19 @@ func UpdateMetricOnServerTemp(serverMetrics map[string]metrics.NewMetric) http.H
 			return
 		}
 
-		_, ok := serverMetrics[requestMetric.ID]
+		m, ok := serverMetrics[requestMetric.ID]
 		if !ok {
 			serverMetrics[requestMetric.ID] = requestMetric
+		} else {
+			switch m.MType {
+			case metrics.CounterType:
+				mDelta := *m.Delta
+				mDelta += *requestMetric.Delta
+				*m.Delta = mDelta
+			case metrics.GaugeType:
+				m.Value = requestMetric.Value
+			}
+			serverMetrics[requestMetric.ID] = m
 		}
 
 		rw.Header().Set("Content-Type", "application/json")
