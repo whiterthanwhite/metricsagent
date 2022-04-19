@@ -149,14 +149,6 @@ func GetMetricFromServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		log.Println("GetMetricFromServer")
 		tempServerMetrics := *serverMetrics
-		// Debug >>
-		var pollCountVal int64 = 0
-		tempServerMetrics = append(tempServerMetrics, metrics.NewMetric{
-			ID:    "PollCount",
-			MType: metrics.CounterType,
-			Delta: &pollCountVal,
-		})
-		// Debug <<
 		log.Println(tempServerMetrics)
 
 		if r.Header.Get("Content-Type") != "application/json" {
