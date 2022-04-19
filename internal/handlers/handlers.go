@@ -278,9 +278,8 @@ func getRequestBody(r *http.Request) ([]byte, error) {
 }
 
 // test handlers
-func UpdateMetricOnServerTemp(serverMetrics *map[string]metrics.NewMetric) http.HandlerFunc {
+func UpdateMetricOnServerTemp(serverMetrics map[string]metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		tempServerMetrics := *serverMetrics
 		requestBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
@@ -295,10 +294,10 @@ func UpdateMetricOnServerTemp(serverMetrics *map[string]metrics.NewMetric) http.
 			return
 		}
 
-		m, ok := tempServerMetrics[requestMetric.ID]
+		m, ok := serverMetrics[requestMetric.ID]
 		if !ok {
-			tempServerMetrics[requestMetric.ID] = requestMetric
-			log.Println("new metric: ", tempServerMetrics[requestMetric.ID])
+			serverMetrics[requestMetric.ID] = requestMetric
+			log.Println("new metric: ", serverMetrics[requestMetric.ID])
 		} else {
 			log.Println("before update: ", m)
 			switch m.MType {
@@ -310,23 +309,16 @@ func UpdateMetricOnServerTemp(serverMetrics *map[string]metrics.NewMetric) http.
 				m.Value = requestMetric.Value
 			}
 			log.Println("after update: ", m)
-			tempServerMetrics[requestMetric.ID] = m
+			serverMetrics[requestMetric.ID] = m
 		}
 
-		*serverMetrics = tempServerMetrics
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
 	}
 }
 
-func GetMetricFromServerTemp(serverMetrics *map[string]metrics.NewMetric) http.HandlerFunc {
+func GetMetricFromServerTemp(serverMetrics map[string]metrics.NewMetric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		serverMetrics := make(map[string]metrics.NewMetric)
-		serverMetrics["PollCount"] = metrics.NewMetric{
-			ID:    "PollCount",
-			MType: metrics.CounterType,
-		}
-
 		requestBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
@@ -343,6 +335,7 @@ func GetMetricFromServerTemp(serverMetrics *map[string]metrics.NewMetric) http.H
 
 		m, ok := serverMetrics[requestMetric.ID]
 		if !ok {
+			log.Println("metric not found: ", m, ok)
 			http.Error(rw, "", http.StatusBadRequest)
 			return
 		}
