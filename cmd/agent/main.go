@@ -61,14 +61,14 @@ func main() {
 				if err != nil {
 					log.Fatal(err)
 				}
-				defer resp1.Body.Close()
+				resp1.Body.Close()
 
 				resp2, err := httpClient.Post(fmt.Sprintf("http://%s:%s/update/", adress, port),
 					"application/json", bytes.NewBuffer([]byte{}))
 				if err != nil {
 					log.Fatal(err)
 				}
-				defer resp2.Body.Close()
+				resp2.Body.Close()
 
 				log.Println(resp1.Status, resp1.Header.Get("Content-Type"))
 				log.Println(resp2.Status, resp2.Header.Get("Content-Type"))

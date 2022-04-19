@@ -224,10 +224,10 @@ func UpdateMetricOnServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 		log.Println(updateMetric)
 
 		mFound := false
-		for _, tempServerMetric := range tempServerMetrics {
-			if updateMetric.ID == tempServerMetric.ID && updateMetric.MType == tempServerMetric.MType {
-				tempServerMetric.Delta = updateMetric.Delta
-				tempServerMetric.Value = updateMetric.Value
+		for i := 0; i < len(tempServerMetrics); i++ {
+			if updateMetric.ID == tempServerMetrics[i].ID && updateMetric.MType == tempServerMetrics[i].MType {
+				tempServerMetrics[i].Delta = updateMetric.Delta
+				tempServerMetrics[i].Value = updateMetric.Value
 				mFound = true
 			}
 		}
