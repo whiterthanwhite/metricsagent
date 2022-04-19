@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,6 +14,38 @@ import (
 
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
 )
+
+func TestUpdateMetricHandler(t *testing.T) {
+	newMetrics := make(map[string]metrics.Metrics)
+	oldMetrics := make(map[string]metrics.Metric)
+
+	tests := []struct {
+		name   string
+		target string
+	}{
+		{
+			name:   "test 1",
+			target: "/gauge/Sys/25",
+		},
+		{
+			name:   "test 2",
+			target: "/counter/PollCount/25",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodPost, tt.target, nil)
+			log.Println(request.URL)
+			w := httptest.NewRecorder()
+			h := http.HandlerFunc(UpdateMetricHandler(oldMetrics, newMetrics))
+			h.ServeHTTP(w, request)
+			result := w.Result()
+			result.Body.Close()
+			log.Println(result.Status)
+		})
+	}
+}
 
 func TestUpdateMetricOnServer(t *testing.T) {
 	serverMetrics := make(map[string]metrics.Metrics, 0)

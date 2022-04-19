@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -16,11 +16,22 @@ import (
 
 func UpdateMetricHandler(addedMetrics map[string]metrics.Metric, newMetrics map[string]metrics.Metrics) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		log.Println("UpdateMetricHandler")
 		mName := chi.URLParam(r, "metricName")
 		mType := chi.URLParam(r, "metricType")
 		mValue := chi.URLParam(r, "metricValue")
 
+		params := strings.Split(r.URL.String(), "/")
+		if mType == "" {
+			mType = params[1]
+		}
+		if mName == "" {
+			mName = params[2]
+		}
+		if mValue == "" {
+			mValue = params[3]
+		}
+
+		log.Println(mName, mType, mValue)
 		switch mType {
 		case "gauge", "counter":
 		default:
@@ -85,9 +96,8 @@ func UpdateMetricHandler(addedMetrics map[string]metrics.Metric, newMetrics map[
 	}
 }
 
-func GetMetricValueFromServer(f *os.File, addedMetrics map[string]metrics.Metric) http.HandlerFunc {
+func GetMetricValueFromServer(addedMetrics map[string]metrics.Metric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		log.Println("GetMetricValueFromServer")
 		mName := chi.URLParam(r, "metricName")
 
 		m, ok := addedMetrics[mName]
@@ -111,7 +121,6 @@ func GetMetricValueFromServer(f *os.File, addedMetrics map[string]metrics.Metric
 
 func GetAllMetricsFromFile(addedMetrics map[string]metrics.Metric) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		log.Println("GetAllMetricsFromFile")
 		responseWriterWriteCheck(rw, []byte("<html><body>"))
 		for _, m := range addedMetrics {
 			responseWriterWriteCheck(rw, []byte(fmt.Sprintf(
@@ -151,7 +160,6 @@ func responseWriterWriteCheck(rw http.ResponseWriter, v []byte) {
 // new functions
 func GetAllMetricsFromServer(serverMetrics []metrics.Metrics) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		log.Println("GetAllMetricsFromServer")
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
 		}
@@ -171,7 +179,6 @@ func GetAllMetricsFromServer(serverMetrics []metrics.Metrics) http.HandlerFunc {
 
 func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		log.Println("UpdateMetricOnServer")
 		requestBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
@@ -207,7 +214,6 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 
 func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		log.Println("GetMetricFromServer")
 		requestBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
