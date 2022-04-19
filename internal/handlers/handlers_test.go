@@ -48,7 +48,7 @@ func TestUpdateMetricHandler(t *testing.T) {
 }
 
 func TestUpdateMetricOnServer(t *testing.T) {
-	serverMetrics := make(map[string]metrics.Metrics, 0)
+	serverMetrics := make(map[string]metrics.Metrics)
 	type send struct {
 		m      metrics.Metrics
 		mDelta int64
@@ -145,7 +145,7 @@ func TestGetMetricFromServer(t *testing.T) {
 	serverMetricDeltas := []int64{
 		0,
 	}
-	serverMetrics := make(map[string]metrics.Metrics, 0)
+	serverMetrics := make(map[string]metrics.Metrics)
 	serverMetrics["Metric 1"] = metrics.Metrics{
 		ID:    "Metric 1",
 		MType: metrics.CounterType,

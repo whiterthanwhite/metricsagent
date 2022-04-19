@@ -64,16 +64,16 @@ func main() {
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlers.GetAllMetricsFromFile(addedMetrics))
 		r.Route("/update", func(r chi.Router) {
+			r.Post("/", handlers.UpdateMetricOnServer(serverMetrics))
 			r.Post("/{metricType}/{metricName}/{metricValue}",
 				handlers.UpdateMetricHandler(addedMetrics, serverMetrics))
 		})
 		r.Route("/value", func(r chi.Router) {
 			r.Post("/", handlers.GetMetricFromServer(serverMetrics))
 			r.Get("/{metricType}/{metricName}",
-				handlers.GetMetricValueFromServer(metricFile, addedMetrics))
+				handlers.GetMetricValueFromServer(addedMetrics))
 		})
 		// r.Post("/", handlers.GetAllMetricsFromServer(serverMetrics))
-		r.Post("/update/", handlers.UpdateMetricOnServer(serverMetrics))
 	})
 
 	log.Fatal(http.ListenAndServe(":8080", r))
