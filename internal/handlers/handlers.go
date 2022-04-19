@@ -248,6 +248,11 @@ func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerF
 		}
 
 		rw.Header().Set("Content-Type", "application/json")
-		rw.Write(returnMetric)
+		i, err := rw.Write(returnMetric)
+		if err != nil {
+			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+			return
+		}
+		log.Println(string(returnMetric), i)
 	}
 }
