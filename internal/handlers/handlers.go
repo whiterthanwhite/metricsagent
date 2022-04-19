@@ -232,6 +232,11 @@ func UpdateMetricOnServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 			}
 		}
 		if !mFound {
+			if updateMetric.MType == metrics.CounterType && updateMetric.Delta == nil {
+				var mDelta int64 = 0
+				updateMetric.Delta = &mDelta
+				log.Println(updateMetric)
+			}
 			tempServerMetrics = append(tempServerMetrics, updateMetric)
 		}
 

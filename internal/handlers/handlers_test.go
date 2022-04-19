@@ -1,213 +1,109 @@
 package handlers
 
 import (
+	// "io/ioutil"
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	// "github.com/stretchr/testify/assert"
+	// "github.com/stretchr/testify/require"
 
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
 )
 
-func TestGetMetricFromServer(t *testing.T) {
-	type send struct {
-		contentType string
-		testMetrics []metrics.NewMetric
-	}
-	type want struct {
-		contentType   string
-		statusCode    int
-		metricValues  []float64
-		serverMetrics []metrics.NewMetric
-	}
-	tests := []struct {
-		name    string
-		request string
-		send    send
-		want    want
-	}{
-		{
-			name:    "test1",
-			request: "/value/",
-			send: send{
-				contentType: "application/json",
-				testMetrics: []metrics.NewMetric{
-					{
-						ID:    "testGaugeMetric01",
-						MType: "gauge",
-					},
-					{
-						ID:    "testGaugeMetric02",
-						MType: "gauge",
-					},
-				},
-			},
-			want: want{
-				contentType:  "application/json",
-				statusCode:   200,
-				metricValues: []float64{150.01, 1003.405},
-				serverMetrics: []metrics.NewMetric{
-					{
-						ID:    "testGaugeMetric01",
-						MType: "gauge",
-					},
-					{
-						ID:    "testGaugeMetric02",
-						MType: "gauge",
-					},
-				},
-			},
-		},
-		{
-			name:    "test 2",
-			request: "/value/",
-			send: send{
-				contentType: "application/json",
-				testMetrics: []metrics.NewMetric{
-					{
-						ID:    "testGaugeMetric01",
-						MType: "gauge",
-					},
-				},
-			},
-			want: want{
-				contentType:  "application/json",
-				statusCode:   200,
-				metricValues: []float64{},
-				serverMetrics: []metrics.NewMetric{
-					{
-						ID:    "testGaugeMetric01",
-						MType: "gauge",
-					},
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			for i, metricValue := range tt.want.metricValues {
-				tt.want.serverMetrics[i].Value = &metricValue
-			}
-			jsonServerMetric, err := json.Marshal(tt.want.serverMetrics)
-			if err != nil {
-				panic(err)
-			}
-
-			testMetrics := tt.send.testMetrics
-			requestBodyBytes, err := json.Marshal(testMetrics)
-			if err != nil {
-				panic(err)
-			}
-			requestBodyBuffer := bytes.NewBuffer(requestBodyBytes)
-			request := httptest.NewRequest(http.MethodPost, tt.request, requestBodyBuffer)
-			request.Header.Set("Content-Type", tt.send.contentType)
-			w := httptest.NewRecorder()
-			h := http.HandlerFunc(GetMetricFromServer(&tt.want.serverMetrics))
-			h.ServeHTTP(w, request)
-			result := w.Result()
-
-			assert.Equal(t, tt.want.statusCode, result.StatusCode)
-			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
-
-			userResult, err := ioutil.ReadAll(result.Body)
-			defer result.Body.Close()
-			require.NoError(t, err)
-			err = result.Body.Close()
-			require.NoError(t, err)
-
-			assert.Equal(t, string(jsonServerMetric), string(userResult))
-		})
-	}
-}
-
 func TestUpdateMetricOnServer(t *testing.T) {
-	type (
-		send struct {
-			contentType   string
-			updateValues  []float64
-			updateMetrics []metrics.NewMetric
-		}
-		want struct {
-			status      int
-			contentType string
-		}
-	)
+	serverMetrics := make([]metrics.NewMetric, 0)
+	type send struct {
+		m      metrics.NewMetric
+		mDelta int64
+		mValue float64
+	}
+
 	tests := []struct {
-		name          string
-		target        string
-		serverMetrics []metrics.NewMetric
-		send          send
-		want          want
+		name string
+		send send
 	}{
 		{
-			name:   "test1",
-			target: "/update/",
+			name: "test 1",
 			send: send{
-				contentType:  "application/json",
-				updateValues: []float64{150.01},
-				updateMetrics: []metrics.NewMetric{
-					{
-						ID:    "testGaugeMetric01",
-						MType: "gauge",
-					},
-				},
-			},
-			want: want{
-				status:      200,
-				contentType: "application/json",
+				m:      metrics.NewMetric{ID: "Metric 1", MType: metrics.CounterType},
+				mDelta: 1,
+				mValue: 0.0,
 			},
 		},
 		{
-			name:   "test2",
-			target: "/update/",
+			name: "test 2",
 			send: send{
-				contentType:  "application/json",
-				updateValues: []float64{949839.1573033818},
-				updateMetrics: []metrics.NewMetric{
-					{
-						ID:    "GetSet244",
-						MType: "gauge",
-					},
-				},
+				m:      metrics.NewMetric{ID: "Metric 2", MType: metrics.CounterType},
+				mDelta: 2,
+				mValue: 0.0,
 			},
-			want: want{
-				status:      200,
-				contentType: "application/json",
+		},
+		{
+			name: "test 3",
+			send: send{
+				m:      metrics.NewMetric{ID: "Metric 3", MType: metrics.CounterType},
+				mDelta: 2,
+				mValue: 0.0,
+			},
+		},
+		{
+			name: "test 4",
+			send: send{
+				m:      metrics.NewMetric{ID: "Metric 4", MType: metrics.GaugeType},
+				mDelta: 0,
+				mValue: 0.01,
+			},
+		},
+		{
+			name: "test 5",
+			send: send{
+				m:      metrics.NewMetric{ID: "Metric 4", MType: metrics.GaugeType},
+				mDelta: 0,
+				mValue: 0.02,
+			},
+		},
+		{
+			name: "test 6",
+			send: send{
+				m:      metrics.NewMetric{ID: "Metric 5", MType: metrics.GaugeType},
+				mDelta: 0,
+				mValue: 0.03,
+			},
+		},
+		{
+			name: "test 7",
+			send: send{
+				m:      metrics.NewMetric{ID: "Metric 6", MType: metrics.CounterType},
+				mDelta: 0,
+				mValue: 0.0,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			updateMetrics := tt.send.updateMetrics
-			for i, updateValue := range tt.send.updateValues {
-				updateMetrics[i].Value = &updateValue
+			if tt.send.mDelta != 0 {
+				tt.send.m.Delta = &tt.send.mDelta
 			}
-			updateMetricBytes, err := json.Marshal(updateMetrics)
+			if tt.send.mValue != 0 {
+				tt.send.m.Value = &tt.send.mValue
+			}
+
+			rM, err := json.Marshal(tt.send.m)
 			if err != nil {
 				panic(err)
 			}
-			updateMetricsBuffer := bytes.NewBuffer(updateMetricBytes)
-			request := httptest.NewRequest(http.MethodPost, tt.target, updateMetricsBuffer)
-			request.Header.Set("Content-Type", tt.send.contentType)
+
+			request := httptest.NewRequest(http.MethodPost, "/update/", bytes.NewBuffer(rM))
+			request.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(UpdateMetricOnServer(&tt.serverMetrics))
+			h := http.HandlerFunc(UpdateMetricOnServer(&serverMetrics))
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			result.Body.Close()
-
-			assert.Equal(t, tt.want.status, result.StatusCode)
-			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
-
-			serverMetricsBytes, err := json.Marshal(tt.serverMetrics)
-			if err != nil {
-				panic(err)
-			}
-			assert.Equal(t, string(updateMetricBytes), string(serverMetricsBytes))
 		})
 	}
 }
