@@ -56,13 +56,22 @@ func main() {
 		case <-reportTicker.C:
 			for _, m := range addedMetrics {
 				urlMetric := getMetricURL(m)
-				// resp, err := httpClient.Post(urlMetric.String(), "text/plain", io.LimitReader(strings.NewReader(""), 0))
-				resp, err := httpClient.Post(urlMetric.String(), "application/json", bytes.NewBuffer([]byte{}))
+
+				resp1, err := httpClient.Post(urlMetric.String(), "text/plain", bytes.NewBuffer([]byte{}))
 				if err != nil {
 					log.Fatal(err)
 				}
-				fmt.Println(resp.Status, resp.Header.Get("Content-Type"))
-				resp.Body.Close()
+				defer resp1.Body.Close()
+
+				resp2, err := httpClient.Post(fmt.Sprintf("http://%s:%s/update/", adress, port),
+					"application/json", bytes.NewBuffer([]byte{}))
+				if err != nil {
+					log.Fatal(err)
+				}
+				defer resp2.Body.Close()
+
+				log.Println(resp1.Status, resp1.Header.Get("Content-Type"))
+				log.Println(resp2.Status, resp2.Header.Get("Content-Type"))
 			}
 		}
 	}

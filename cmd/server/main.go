@@ -43,11 +43,9 @@ func main() {
 			r.Get("/{metricType}/{metricName}",
 				handlers.GetMetricValueFromServer(metricFile, addedMetrics))
 		})
-		r.Route("/", func(r chi.Router) {
-			r.Post("/", handlers.GetAllMetricsFromServer(serverMetrics))
-			r.Post("/update/", handlers.UpdateMetricOnServer(&serverMetrics))
-			r.Post("/value/", handlers.GetMetricFromServer(&serverMetrics))
-		})
+		// r.Post("/", handlers.GetAllMetricsFromServer(serverMetrics))
+		r.Post("/update/", handlers.UpdateMetricOnServer(&serverMetrics))
+		r.Post("/value/", handlers.GetMetricFromServer(&serverMetrics))
 	})
 
 	log.Fatal(http.ListenAndServe(":8080", r))
