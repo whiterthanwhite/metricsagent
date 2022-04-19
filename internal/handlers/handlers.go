@@ -163,7 +163,14 @@ func GetMetricFromServer(serverMetrics *[]metrics.NewMetric) http.HandlerFunc {
 			return
 		}
 		requestedMetrics := make([]metrics.NewMetric, 0)
-		if err := json.Unmarshal(requestBodyBytes, &requestedMetrics); err != nil {
+		requestedMetrics = append(requestedMetrics, metrics.NewMetric{})
+		/*
+			if err := json.Unmarshal(requestBodyBytes, &requestedMetrics); err != nil {
+				http.Error(rw, "", http.StatusInternalServerError)
+				return
+			}
+		*/
+		if err := json.Unmarshal(requestBodyBytes, &requestedMetrics[0]); err != nil {
 			http.Error(rw, "", http.StatusInternalServerError)
 			return
 		}
