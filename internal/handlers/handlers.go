@@ -298,6 +298,7 @@ func UpdateMetricOnServerTemp(serverMetrics map[string]metrics.NewMetric) http.H
 		if !ok {
 			serverMetrics[requestMetric.ID] = requestMetric
 		} else {
+			log.Println("before update: ", m)
 			switch m.MType {
 			case metrics.CounterType:
 				mDelta := *m.Delta
@@ -306,6 +307,7 @@ func UpdateMetricOnServerTemp(serverMetrics map[string]metrics.NewMetric) http.H
 			case metrics.GaugeType:
 				m.Value = requestMetric.Value
 			}
+			log.Println("after update: ", m)
 			serverMetrics[requestMetric.ID] = m
 		}
 
@@ -349,7 +351,6 @@ func GetMetricFromServerTemp(serverMetrics map[string]metrics.NewMetric) http.Ha
 		}
 
 		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusOK)
 		log.Println("returnmetric: ", string(returnMetric))
 		rw.Write(returnMetric)
 	}
