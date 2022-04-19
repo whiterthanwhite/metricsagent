@@ -68,12 +68,12 @@ func main() {
 				handlers.UpdateMetricHandler(addedMetrics, serverMetrics))
 		})
 		r.Route("/value", func(r chi.Router) {
+			r.Post("/", handlers.GetMetricFromServer(serverMetrics))
 			r.Get("/{metricType}/{metricName}",
 				handlers.GetMetricValueFromServer(metricFile, addedMetrics))
 		})
 		// r.Post("/", handlers.GetAllMetricsFromServer(serverMetrics))
 		r.Post("/update/", handlers.UpdateMetricOnServer(serverMetrics))
-		r.Post("/value/", handlers.GetMetricFromServer(serverMetrics))
 	})
 
 	log.Fatal(http.ListenAndServe(":8080", r))
