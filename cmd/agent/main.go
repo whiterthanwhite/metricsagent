@@ -112,8 +112,8 @@ func main() {
 				}
 				resp2.Body.Close()
 
-				//log.Println(resp1.Status, resp1.Header.Get("Content-Type"))
-				log.Println(resp2.Status, resp2.Header.Get("Content-Type"))
+				// log.Println(resp1.Status, resp1.Header.Get("Content-Type"))
+				log.Println(string(bNewM))
 			}
 		}
 	}

@@ -110,7 +110,31 @@ func TestUpdateMetricOnServer(t *testing.T) {
 			name: "test 7",
 			send: send{
 				m:      metrics.Metrics{ID: "Metric 6", MType: metrics.CounterType},
-				mDelta: 0,
+				mDelta: 1,
+				mValue: 0.0,
+			},
+		},
+		{
+			name: "test 8",
+			send: send{
+				m:      metrics.Metrics{ID: "Metric 10", MType: metrics.CounterType},
+				mDelta: 1,
+				mValue: 0.0,
+			},
+		},
+		{
+			name: "test 9",
+			send: send{
+				m:      metrics.Metrics{ID: "Metric 1", MType: metrics.CounterType},
+				mDelta: 1,
+				mValue: 0.0,
+			},
+		},
+		{
+			name: "test 10",
+			send: send{
+				m:      metrics.Metrics{ID: "Metric 1", MType: metrics.CounterType},
+				mDelta: 1,
 				mValue: 0.0,
 			},
 		},
@@ -129,6 +153,9 @@ func TestUpdateMetricOnServer(t *testing.T) {
 				panic(err)
 			}
 
+			rM = append(rM, 40)
+			log.Println(string(rM))
+
 			request := httptest.NewRequest(http.MethodPost, "/update/", bytes.NewBuffer(rM))
 			request.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
@@ -136,6 +163,17 @@ func TestUpdateMetricOnServer(t *testing.T) {
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			result.Body.Close()
+
+			m, ok := serverMetrics[tt.send.m.ID]
+			if !ok {
+				panic(ok)
+			}
+			switch m.MType {
+			case metrics.CounterType:
+				log.Println(m.ID, m.MType, *m.Delta)
+			case metrics.GaugeType:
+				log.Println(m.ID, m.MType, *m.Value)
+			}
 		})
 	}
 }

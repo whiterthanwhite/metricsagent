@@ -35,5 +35,6 @@ func GetStandardMetrics() map[string]MetricDescription {
 	metricDescriptions["Sys"] = MetricDescription{MName: "Sys", MType: GaugeType}
 	metricDescriptions["TotalAlloc"] = MetricDescription{MName: "TotalAlloc", MType: GaugeType}
 	metricDescriptions["RandomValue"] = MetricDescription{MName: "RandomValue", MType: GaugeType}
+	metricDescriptions["PollCount"] = MetricDescription{MName: "PollCount", MType: CounterType}
 	return metricDescriptions
 }
