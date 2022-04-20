@@ -153,7 +153,7 @@ func TestUpdateMetricOnServer(t *testing.T) {
 				panic(err)
 			}
 
-			rM = append(rM, 40)
+			//rM = append(rM, 40)
 			log.Println(string(rM))
 
 			request := httptest.NewRequest(http.MethodPost, "/update/", bytes.NewBuffer(rM))

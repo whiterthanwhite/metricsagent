@@ -220,9 +220,11 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 		} else {
 			switch m.MType {
 			case metrics.CounterType:
-				mDelta := *m.Delta
-				mDelta += *requestMetric.Delta
-				m.Delta = &mDelta
+				/*
+					mDelta := *m.Delta
+					mDelta += *requestMetric.Delta
+					m.Delta = &mDelta
+				*/
 			case metrics.GaugeType:
 				m.Value = requestMetric.Value
 			}
