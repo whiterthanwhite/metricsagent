@@ -149,8 +149,8 @@ func main() {
 
 				// new
 				newMetric := createNewNetric(metric)
-				log.Println(newMetric)
 				// sendNewUpdate(&httpClient, &newMetric)
+				log.Println(newMetric)
 			}
 		}
 	}
