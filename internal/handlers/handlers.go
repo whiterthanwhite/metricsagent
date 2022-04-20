@@ -206,8 +206,11 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 
 		var requestMetric metrics.Metrics
 		if err := json.NewDecoder(r.Body).Decode(&requestMetric); err != nil {
-			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-			return
+			/*
+				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+				return
+			*/
+			log.Println(err)
 		}
 		r.Body.Close()
 
