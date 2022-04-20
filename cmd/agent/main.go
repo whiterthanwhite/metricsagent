@@ -118,11 +118,18 @@ func main() {
 					log.Println(err)
 				}
 
-				resp2, err := httpClient.Post(fmt.Sprintf("http://%s:%s/update/", adress, port),
-					"application/json", bytes.NewBuffer(bNewM))
+				urlString := fmt.Sprintf("http://%s:%s/update/", adress, port)
+				requestBody := bytes.NewBuffer(bNewM)
+				agentRequest, err := http.NewRequest(http.MethodPost, urlString, requestBody)
 				if err != nil {
-					log.Println(err)
+					log.Fatal(err)
 				}
+				agentRequest.Header.Set("Content-type", "application/json")
+				resp2, err := httpClient.Do(agentRequest)
+				if err != nil {
+					log.Fatal(err)
+				}
+
 				var responseMetric metrics.Metrics
 				if err := json.NewDecoder(resp2.Body).Decode(&responseMetric); err != nil {
 					log.Println(err)
