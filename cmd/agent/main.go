@@ -20,6 +20,47 @@ const (
 	port           = "8080"
 )
 
+func sendNewUpdate(agentClient *http.Client, m *metrics.Metrics) {
+	bNewM, err := json.Marshal(*m)
+	if err != nil {
+		log.Println(err)
+	}
+
+	urlString := fmt.Sprintf("http://%s:%s/update", adress, port)
+	requestBody := bytes.NewBuffer(bNewM)
+	agentRequest, err := http.NewRequest(http.MethodPost, urlString, requestBody)
+	if err != nil {
+		log.Fatal(err)
+	}
+	agentRequest.Header.Set("Content-type", "application/json")
+	resp2, err := agentClient.Do(agentRequest)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var responseMetric metrics.Metrics
+	if err := json.NewDecoder(resp2.Body).Decode(&responseMetric); err != nil {
+		log.Println(err)
+	}
+	log.Println(responseMetric)
+	if err := resp2.Body.Close(); err != nil {
+		log.Fatal(err)
+	}
+	log.Println("new sended")
+}
+
+func sendOldUpdate(agentClient *http.Client, m *metrics.Metric) {
+	urlMetric := getMetricURL(*m)
+	resp, err := agentClient.Post(urlMetric.String(), "text/plain", nil)
+	if err != nil {
+		log.Println(err)
+	}
+	if err := resp.Body.Close(); err != nil {
+		log.Fatal(err)
+	}
+	log.Println("old sended")
+}
+
 func getMetricURL(m metrics.Metric) *url.URL {
 	urlString := getMetricURLString(m)
 	urlMetric, err := url.Parse(urlString)
@@ -100,48 +141,15 @@ func main() {
 			addedMetrics["PollCount"] = pollCount
 		case <-reportTicker.C:
 			log.Println("Send Metrics To Server")
-			for _, m := range addedMetrics {
-				log.Println(m, m.GetValue())
+			for _, metric := range addedMetrics {
+				log.Println(metric, metric.GetValue())
 
 				// old
-				urlMetric := getMetricURL(m)
-				resp1, err := httpClient.Post(urlMetric.String(), "text/plain", nil)
-				if err != nil {
-					log.Println(err)
-				}
-				if err := resp1.Body.Close(); err != nil {
-					log.Fatal(err)
-				}
-				log.Println("old sended")
+				// sendOldUpdate(&httpClient, &metric)
 
 				// new
-				newM := createNewNetric(m)
-				bNewM, err := json.Marshal(newM)
-				if err != nil {
-					log.Println(err)
-				}
-
-				urlString := fmt.Sprintf("http://%s:%s/update", adress, port)
-				requestBody := bytes.NewBuffer(bNewM)
-				agentRequest, err := http.NewRequest(http.MethodPost, urlString, requestBody)
-				if err != nil {
-					log.Fatal(err)
-				}
-				agentRequest.Header.Set("Content-type", "application/json")
-				resp2, err := httpClient.Do(agentRequest)
-				if err != nil {
-					log.Fatal(err)
-				}
-
-				var responseMetric metrics.Metrics
-				if err := json.NewDecoder(resp2.Body).Decode(&responseMetric); err != nil {
-					log.Println(err)
-				}
-				log.Println(responseMetric)
-				if err := resp2.Body.Close(); err != nil {
-					log.Fatal(err)
-				}
-				log.Println("new sended")
+				newMetric := createNewNetric(metric)
+				sendNewUpdate(&httpClient, &newMetric)
 			}
 		}
 	}
