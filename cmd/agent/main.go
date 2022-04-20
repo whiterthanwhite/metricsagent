@@ -15,7 +15,7 @@ import (
 
 const (
 	pollInterval   = 2
-	reportInterval = 1
+	reportInterval = 10
 	adress         = "127.0.0.1"
 	port           = "8080"
 )
@@ -61,15 +61,11 @@ func createNewNetric(oldM metrics.Metric) metrics.Metrics {
 	var mValue float64 = 0
 
 	switch v := oldM.GetValue().(type) {
-	case int64:
-		mDelta = v
-	case float64:
-		mValue = v
-	}
-	switch newM.MType {
-	case metrics.CounterType:
+	case metrics.Counter:
+		mDelta = int64(v)
 		newM.Delta = &mDelta
-	case metrics.GaugeType:
+	case metrics.Gauge:
+		mValue = float64(v)
 		newM.Value = &mValue
 	}
 
@@ -92,11 +88,20 @@ func main() {
 			randomiser := rand.NewSource(time.Now().Unix())
 			randomValue.UpdateValue(float64(randomiser.Int63()))
 			addedMetrics["RandomValue"] = randomValue
+			var counter int64 = 0
 			for _, m := range addedMetrics {
-				if m.GetName() != "RandomValue" {
+				if m.GetName() != "RandomValue" && m.GetName() != "PollCount" {
 					m.UpdateValue(randomValue.GetValue())
+					counter++
 				}
 			}
+			pollCount := addedMetrics["PollCount"]
+			switch v := pollCount.GetValue().(type) {
+			case metrics.Counter:
+				counter += int64(v)
+			}
+			pollCount.UpdateValue(counter)
+			addedMetrics["PollCount"] = pollCount
 		case <-reportTicker.C:
 			for _, m := range addedMetrics {
 				/*
@@ -107,11 +112,21 @@ func main() {
 					}
 					resp1.Body.Close()
 				*/
+				if m.GetName() == "PollCount" {
+					log.Println(m, m.GetValue())
+				}
 				newM := createNewNetric(m)
+
 				bNewM, err := json.Marshal(newM)
 				if err != nil {
 					panic(err)
 				}
+
+				if m.GetName() == "PollCount" {
+					log.Println(m, m.GetValue())
+					log.Println(string(bNewM))
+				}
+
 				resp2, err := httpClient.Post(fmt.Sprintf("http://%s:%s/update/", adress, port),
 					"application/json", bytes.NewBuffer(bNewM))
 				if err != nil {
@@ -122,9 +137,6 @@ func main() {
 					panic(err)
 				}
 				resp2.Body.Close()
-
-				// log.Println(resp1.Status, resp1.Header.Get("Content-Type"))
-				log.Println(string(bNewM))
 			}
 		}
 	}
