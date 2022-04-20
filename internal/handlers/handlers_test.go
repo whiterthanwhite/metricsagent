@@ -41,7 +41,18 @@ func TestUpdateMetricHandler(t *testing.T) {
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			result.Body.Close()
-			log.Println(result.Status)
+
+			for _, oldMetric := range oldMetrics {
+				log.Println(oldMetric, oldMetric.GetValue())
+			}
+			for _, newMetric := range newMetrics {
+				switch newMetric.MType {
+				case metrics.CounterType:
+					log.Println(newMetric, *newMetric.Delta)
+				case metrics.GaugeType:
+					log.Println(newMetric, *newMetric.Value)
+				}
+			}
 		})
 	}
 }
