@@ -9,13 +9,13 @@ import (
 
 type (
 	metrictype string
-	gauge      float64
-	counter    int64
+	Gauge      float64
+	Counter    int64
 )
 
 const (
-	GaugeType   metrictype = "gauge"
-	CounterType metrictype = "counter"
+	GaugeType   metrictype = "Gauge"
+	CounterType metrictype = "Counter"
 )
 
 type Metrics struct {
@@ -35,14 +35,14 @@ type Metric interface {
 type GaugeMetric struct {
 	Name     string
 	TypeName metrictype
-	Value    gauge
+	Value    Gauge
 	mu       sync.Mutex
 }
 
 type CounterMetric struct {
 	Name     string
 	TypeName metrictype
-	Value    counter
+	Value    Counter
 	mu       sync.Mutex
 }
 
@@ -68,9 +68,9 @@ func (gm *GaugeMetric) UpdateValue(v interface{}) {
 	newValue, ok := v.(float64)
 	if ok {
 		gm.mu.Lock()
-		gm.Value = gauge(newValue)
+		gm.Value = Gauge(newValue)
 		counterValue := counterMetrics["PollCount"].GetValue()
-		counterMetrics["PollCount"].UpdateValue(counterValue.(counter) + 1)
+		counterMetrics["PollCount"].UpdateValue(counterValue.(Counter) + 1)
 		gm.mu.Unlock()
 	}
 }
@@ -90,14 +90,14 @@ func (cm *CounterMetric) GetTypeName() metrictype {
 func (cm *CounterMetric) GetValue() interface{} {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
-	return counter(cm.Value)
+	return Counter(cm.Value)
 }
 
 func (cm *CounterMetric) UpdateValue(v interface{}) {
 	newValue, ok := v.(int64)
 	if ok {
 		cm.mu.Lock()
-		cm.Value += counter(newValue)
+		cm.Value += Counter(newValue)
 		cm.mu.Unlock()
 	}
 }
@@ -165,7 +165,7 @@ func ParseCSVString(csvStr string) Metric {
 		return &GaugeMetric{
 			Name:     metricValues[1],
 			TypeName: mt,
-			Value:    gauge(tempFloat),
+			Value:    Gauge(tempFloat),
 		}
 	case CounterType:
 		tempInt, err := strconv.ParseInt(metricValues[2], 0, 64)
@@ -175,7 +175,7 @@ func ParseCSVString(csvStr string) Metric {
 		return &CounterMetric{
 			Name:     metricValues[1],
 			TypeName: mt,
-			Value:    counter(tempInt),
+			Value:    Counter(tempInt),
 		}
 	}
 

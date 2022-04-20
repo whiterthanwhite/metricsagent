@@ -212,7 +212,6 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
 		}
-		log.Println(requestMetric)
 
 		m, ok := serverMetrics[requestMetric.ID]
 		if !ok {
@@ -229,6 +228,12 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 			serverMetrics[requestMetric.ID] = m
 		}
 
+		if m.Delta != nil {
+			log.Println(m, *m.Delta)
+		}
+		if m.Value != nil {
+			log.Println(m, *m.Value)
+		}
 		log.Println("Update OK")
 		rw.Header().Set("Content-Type", "application/json")
 		rw.Write([]byte(`{}`))
