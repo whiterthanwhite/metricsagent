@@ -179,6 +179,7 @@ func GetAllMetricsFromServer(serverMetrics []metrics.Metrics) http.HandlerFunc {
 
 func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		log.Println(r.URL)
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
 			return

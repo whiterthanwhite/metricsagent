@@ -64,7 +64,7 @@ func main() {
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlers.GetAllMetricsFromFile(addedMetrics))
 		r.Route("/update", func(r chi.Router) {
-			// r.Post("/", handlers.UpdateMetricOnServer(serverMetrics))
+			r.Post("/", handlers.UpdateMetricOnServer(serverMetrics))
 			r.Post("/{metricType}/{metricName}/{metricValue}",
 				handlers.UpdateMetricHandler(addedMetrics, serverMetrics))
 		})
