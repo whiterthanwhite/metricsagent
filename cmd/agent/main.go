@@ -105,9 +105,12 @@ func main() {
 
 				// old
 				urlMetric := getMetricURL(m)
-				_, err := httpClient.Post(urlMetric.String(), "text/plain", nil)
+				resp1, err := httpClient.Post(urlMetric.String(), "text/plain", nil)
 				if err != nil {
 					log.Println(err)
+				}
+				if err := resp1.Body.Close(); err != nil {
+					log.Fatal(err)
 				}
 				log.Println("old sended")
 
@@ -118,7 +121,7 @@ func main() {
 					log.Println(err)
 				}
 
-				urlString := fmt.Sprintf("http://%s:%s/update/", adress, port)
+				urlString := fmt.Sprintf("http://%s:%s/update", adress, port)
 				requestBody := bytes.NewBuffer(bNewM)
 				agentRequest, err := http.NewRequest(http.MethodPost, urlString, requestBody)
 				if err != nil {
