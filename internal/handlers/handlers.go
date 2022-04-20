@@ -107,7 +107,6 @@ func GetMetricValueFromServer(addedMetrics map[string]metrics.Metric) http.Handl
 			return
 		}
 
-		rw.WriteHeader(http.StatusOK)
 		mValue := m.GetValue()
 		switch v := mValue.(type) {
 		/* case metrics.GaugeMetric:
@@ -219,21 +218,20 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 		} else {
 			switch m.MType {
 			case metrics.CounterType:
-				mDelta := *m.Delta
-				mDelta += *requestMetric.Delta
-				m.Delta = &mDelta
+				m.Delta = requestMetric.Delta
+				log.Println(m, *m.Delta)
 			case metrics.GaugeType:
 				m.Value = requestMetric.Value
+				if m.ID == "RandomValue" {
+					log.Println(m, *m.Value)
+				}
 			}
 			serverMetrics[requestMetric.ID] = m
+			if m.ID == "RandomValue" {
+				log.Println(serverMetrics[requestMetric.ID], m)
+			}
 		}
 
-		if m.Delta != nil {
-			log.Println(m, *m.Delta)
-		}
-		if m.Value != nil {
-			log.Println(m, *m.Value)
-		}
 		log.Println("Update OK")
 		rw.Header().Set("Content-Type", "application/json")
 		rw.Write([]byte(`{}`))
@@ -260,6 +258,10 @@ func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerF
 		if err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
+		}
+
+		if m.ID == "RandomValue" {
+			log.Println(string(returnMetric))
 		}
 
 		rw.Header().Set("Content-Type", "application/json")
