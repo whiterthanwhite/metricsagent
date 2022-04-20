@@ -99,15 +99,21 @@ func main() {
 			pollCount.UpdateValue(counter)
 			addedMetrics["PollCount"] = pollCount
 		case <-reportTicker.C:
+			log.Println("Send Metrics To Server")
 			for _, m := range addedMetrics {
+				log.Println(m, m.GetValue())
+
+				// old
 				urlMetric := getMetricURL(m)
 				resp1, err := httpClient.Post(urlMetric.String(), "text/plain", nil)
 				if err != nil {
 					log.Println(err)
 				}
 				resp1.Body.Close()
-				newM := createNewNetric(m)
+				log.Println("old sended")
 
+				// new
+				newM := createNewNetric(m)
 				bNewM, err := json.Marshal(newM)
 				if err != nil {
 					log.Println(err)
@@ -123,6 +129,7 @@ func main() {
 					log.Println(err)
 				}
 				resp2.Body.Close()
+				log.Println("new sended")
 			}
 		}
 	}
