@@ -57,16 +57,12 @@ func createNewNetric(oldM metrics.Metric) metrics.Metrics {
 		ID:    oldM.GetName(),
 		MType: oldM.GetTypeName(),
 	}
-	var mDelta int64 = 0
-	var mValue float64 = 0
 
 	switch v := oldM.GetValue().(type) {
-	case metrics.Counter:
-		mDelta = int64(v)
-		newM.Delta = &mDelta
-	case metrics.Gauge:
-		mValue = float64(v)
-		newM.Value = &mValue
+	case int64:
+		newM.Delta = &v
+	case float64:
+		newM.Value = &v
 	}
 
 	return newM
@@ -86,7 +82,7 @@ func main() {
 		case <-pollTicker.C:
 			randomValue := addedMetrics["RandomValue"]
 			randomiser := rand.NewSource(time.Now().Unix())
-			randomValue.UpdateValue(float64(randomiser.Int63()))
+			randomValue.UpdateValue(float64(randomiser.Int63() % 10000))
 			addedMetrics["RandomValue"] = randomValue
 			var counter int64 = 0
 			for _, m := range addedMetrics {
@@ -97,8 +93,8 @@ func main() {
 			}
 			pollCount := addedMetrics["PollCount"]
 			switch v := pollCount.GetValue().(type) {
-			case metrics.Counter:
-				counter += int64(v)
+			case int64:
+				counter += v
 			}
 			pollCount.UpdateValue(counter)
 			addedMetrics["PollCount"] = pollCount
@@ -112,19 +108,11 @@ func main() {
 					}
 					resp1.Body.Close()
 				*/
-				if m.GetName() == "PollCount" {
-					log.Println(m, m.GetValue())
-				}
 				newM := createNewNetric(m)
 
 				bNewM, err := json.Marshal(newM)
 				if err != nil {
 					panic(err)
-				}
-
-				if m.GetName() == "PollCount" {
-					log.Println(m, m.GetValue())
-					log.Println(string(bNewM))
 				}
 
 				resp2, err := httpClient.Post(fmt.Sprintf("http://%s:%s/update/", adress, port),
