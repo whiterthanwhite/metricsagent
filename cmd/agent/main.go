@@ -127,7 +127,10 @@ func main() {
 				if err := json.NewDecoder(resp2.Body).Decode(&responseMetric); err != nil {
 					log.Println(err)
 				}
-				resp2.Body.Close()
+				log.Println(responseMetric)
+				if err := resp2.Body.Close(); err != nil {
+					log.Fatal(err)
+				}
 				log.Println("new sended")
 			}
 		}
