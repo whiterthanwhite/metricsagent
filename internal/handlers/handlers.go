@@ -179,21 +179,6 @@ func GetAllMetricsFromServer(serverMetrics []metrics.Metrics) http.HandlerFunc {
 
 func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		/*
-			requestBody, err := ioutil.ReadAll(r.Body)
-			if err != nil {
-				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-				return
-			}
-			r.Body.Close()
-
-			var requestMetric metrics.Metrics
-			if err := json.Unmarshal(requestBody, &requestMetric); err != nil {
-				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-				return
-			}
-		*/
-
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
 			return
@@ -236,25 +221,13 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 
 func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		/*
-			requestBody, err := ioutil.ReadAll(r.Body)
-			if err != nil {
-				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-				return
-			}
-			r.Body.Close()
-
-			var requestMetric metrics.Metrics
-			if err := json.Unmarshal(requestBody, &requestMetric); err != nil {
-				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-				return
-			}
-		*/
-
 		var requestMetric metrics.Metrics
 		if err := json.NewDecoder(r.Body).Decode(&requestMetric); err != nil {
-			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-			return
+			/*
+				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+				return
+			*/
+			log.Println(err)
 		}
 		r.Body.Close()
 
