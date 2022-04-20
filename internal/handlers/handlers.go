@@ -194,7 +194,16 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 			}
 		*/
 
-		log.Println(r.Header.Get("Content-Type"), r.ContentLength)
+		if r.Header.Get("Content-Type") != "application/json" {
+			http.Error(rw, "", http.StatusBadRequest)
+			return
+		}
+
+		if r.ContentLength == 0 {
+			http.Error(rw, "", http.StatusBadRequest)
+			return
+		}
+
 		var requestMetric metrics.Metrics
 		if err := json.NewDecoder(r.Body).Decode(&requestMetric); err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
