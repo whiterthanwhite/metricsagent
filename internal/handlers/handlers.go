@@ -220,11 +220,9 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 		} else {
 			switch m.MType {
 			case metrics.CounterType:
-				/*
-					mDelta := *m.Delta
-					mDelta += *requestMetric.Delta
-					m.Delta = &mDelta
-				*/
+				mDelta := *m.Delta
+				mDelta += *requestMetric.Delta
+				m.Delta = &mDelta
 			case metrics.GaugeType:
 				m.Value = requestMetric.Value
 			}
@@ -233,7 +231,8 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 
 		log.Println("Update OK")
 		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusOK)
+		rw.Write([]byte(`{ }`))
+
 	}
 }
 

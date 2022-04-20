@@ -14,7 +14,7 @@ import (
 
 const (
 	pollInterval   = 2
-	reportInterval = 10
+	reportInterval = 1
 	adress         = "127.0.0.1"
 	port           = "8080"
 )
@@ -109,6 +109,10 @@ func main() {
 					"application/json", bytes.NewBuffer(bNewM))
 				if err != nil {
 					log.Fatal(err)
+				}
+				var responseMetric metrics.Metrics
+				if err := json.NewDecoder(resp2.Body).Decode(&responseMetric); err != nil {
+					panic(err)
 				}
 				resp2.Body.Close()
 
