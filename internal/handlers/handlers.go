@@ -231,7 +231,7 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 
 		log.Println("Update OK")
 		rw.Header().Set("Content-Type", "application/json")
-		rw.Write([]byte(`{ }`))
+		rw.Write([]byte(`{}`))
 
 	}
 }

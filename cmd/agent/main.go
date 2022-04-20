@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"time"
@@ -87,8 +88,14 @@ func main() {
 	for {
 		select {
 		case <-pollTicker.C:
+			randomValue := addedMetrics["RandomValue"]
+			randomiser := rand.NewSource(time.Now().Unix())
+			randomValue.UpdateValue(float64(randomiser.Int63()))
+			addedMetrics["RandomValue"] = randomValue
 			for _, m := range addedMetrics {
-				m.UpdateValue(25.0)
+				if m.GetName() != "RandomValue" {
+					m.UpdateValue(randomValue.GetValue())
+				}
 			}
 		case <-reportTicker.C:
 			for _, m := range addedMetrics {
