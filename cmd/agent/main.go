@@ -110,7 +110,7 @@ func main() {
 
 				bNewM, err := json.Marshal(newM)
 				if err != nil {
-					panic(err)
+					log.Println(err)
 				}
 
 				resp2, err := httpClient.Post(fmt.Sprintf("http://%s:%s/update/", adress, port),
@@ -120,7 +120,7 @@ func main() {
 				}
 				var responseMetric metrics.Metrics
 				if err := json.NewDecoder(resp2.Body).Decode(&responseMetric); err != nil {
-					panic(err)
+					log.Println(err)
 				}
 				resp2.Body.Close()
 			}
