@@ -105,11 +105,10 @@ func main() {
 
 				// old
 				urlMetric := getMetricURL(m)
-				resp1, err := httpClient.Post(urlMetric.String(), "text/plain", nil)
+				_, err := httpClient.Post(urlMetric.String(), "text/plain", nil)
 				if err != nil {
 					log.Println(err)
 				}
-				resp1.Body.Close()
 				log.Println("old sended")
 
 				// new
