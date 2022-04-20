@@ -208,7 +208,7 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 		r.Body.Close()
 		log.Println(string(requestBody))
 
-		if err := json.Unmarshal(requestBody, &requestBody); err != nil {
+		if err := json.Unmarshal(requestBody, &requestMetric); err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
 		}
@@ -239,11 +239,8 @@ func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerF
 	return func(rw http.ResponseWriter, r *http.Request) {
 		var requestMetric metrics.Metrics
 		if err := json.NewDecoder(r.Body).Decode(&requestMetric); err != nil {
-			/*
-				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-				return
-			*/
-			log.Println(err)
+			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+			return
 		}
 		r.Body.Close()
 
