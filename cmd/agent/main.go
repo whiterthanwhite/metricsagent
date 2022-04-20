@@ -30,7 +30,6 @@ func getMetricURL(m metrics.Metric) *url.URL {
 }
 
 func getMetricURLString(m metrics.Metric) string {
-	log.Println(m)
 	stringURL := ""
 	switch v := m.GetValue().(type) {
 	case int64:
@@ -69,6 +68,7 @@ func createNewNetric(oldM metrics.Metric) metrics.Metrics {
 }
 
 func main() {
+	log.Println("Start Metric Agent")
 	httpClient := http.Client{}
 	addedMetrics := metrics.GetAllMetrics()
 
