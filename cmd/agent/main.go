@@ -101,9 +101,9 @@ func main() {
 		case <-reportTicker.C:
 			for _, m := range addedMetrics {
 				urlMetric := getMetricURL(m)
-				resp1, err := httpClient.Post(urlMetric.String(), "text/plain", bytes.NewBuffer([]byte{}))
+				resp1, err := httpClient.Post(urlMetric.String(), "text/plain", nil)
 				if err != nil {
-					log.Fatal(err)
+					log.Println(err)
 				}
 				resp1.Body.Close()
 				newM := createNewNetric(m)
@@ -116,7 +116,7 @@ func main() {
 				resp2, err := httpClient.Post(fmt.Sprintf("http://%s:%s/update/", adress, port),
 					"application/json", bytes.NewBuffer(bNewM))
 				if err != nil {
-					log.Fatal(err)
+					log.Println(err)
 				}
 				var responseMetric metrics.Metrics
 				if err := json.NewDecoder(resp2.Body).Decode(&responseMetric); err != nil {

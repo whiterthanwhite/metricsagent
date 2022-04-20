@@ -260,10 +260,6 @@ func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerF
 			return
 		}
 
-		if m.ID == "RandomValue" {
-			log.Println(string(returnMetric))
-		}
-
 		rw.Header().Set("Content-Type", "application/json")
 		_, err = rw.Write(returnMetric)
 		if err != nil {
