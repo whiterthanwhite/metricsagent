@@ -109,14 +109,13 @@ func createNewNetric(oldM metrics.Metric) metrics.Metrics {
 }
 
 func setUpHTTPClient(agentClient *http.Client) {
-	agentClient.Timeout = 1 * time.Second
+	agentClient.Timeout = 10 * time.Second
 }
 
 func main() {
 	log.Println("Start Metric Agent")
 	httpClient := &http.Client{}
 	setUpHTTPClient(httpClient)
-	log.Println(httpClient.Timeout)
 	addedMetrics := metrics.GetAllMetrics()
 
 	pollTicker := time.NewTicker(pollInterval * time.Second)
