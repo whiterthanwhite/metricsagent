@@ -14,8 +14,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-resty/resty/v2"
-
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
 )
 
@@ -147,41 +145,11 @@ func enableTerminationSignals() {
 	os.Exit(exitCode)
 }
 
-func sendTestRequest(agentClient *http.Client, metricJSON string) {
-	restyClient := resty.New()
-
-	// restyClient.SetCloseConnection(true).SetTimeout(0)
-
-	_, err := restyClient.R().
-		SetBody(metricJSON).
-		Post("http://localhost:8080/update/")
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	log.Println("Request sended successfully")
-}
-
 func main() {
 	log.Println("Start Metric Agent")
 	go enableTerminationSignals()
 	httpClient := &http.Client{}
 	setUpHTTPClient(httpClient)
-
-	/*
-		metricsJSON := []string{
-			`{"id":"RandomValue","type":"gauge","value":"0.12345"}`,
-			`{"id":"RandomValue","type":"gauge","value":"0.23456"}`,
-			`{"id":"RandomValue","type":"gauge","value":"0.34567"}`,
-		}
-		for i := 0; i < len(metricsJSON); i++ {
-			time.Sleep(reportInterval * time.Second)
-			sendTestRequest(httpClient, metricsJSON[i])
-		}
-
-		return
-	*/
 
 	addedMetrics := metrics.GetAllMetrics()
 
