@@ -110,7 +110,7 @@ func createNewNetric(oldM metrics.Metric) metrics.Metrics {
 
 func main() {
 	log.Println("Start Metric Agent")
-	// httpClient := http.Client{}
+	httpClient := http.Client{}
 	addedMetrics := metrics.GetAllMetrics()
 
 	pollTicker := time.NewTicker(pollInterval * time.Second)
@@ -144,12 +144,22 @@ func main() {
 			for _, metric := range addedMetrics {
 				log.Println(metric, metric.GetValue())
 
-				// old
-				// sendOldUpdate(&httpClient, &metric)
-
-				// new
-				newMetric := createNewNetric(metric)
+				// sendOldUpdate(&httpClient, &metric) // old
+				newMetric := createNewNetric(metric) // new
 				// sendNewUpdate(&httpClient, &newMetric)
+
+				urlString := fmt.Sprintf("http://%v:%v/update", adress, port)
+				serverURL, err := url.Parse(urlString)
+				if err != nil {
+					log.Fatal(err)
+				}
+				resp, err := httpClient.Post(serverURL.String(), "application/json", nil)
+				if err != nil {
+					log.Fatal(err)
+				}
+				if err := resp.Body.Close(); err != nil {
+					log.Fatal(err)
+				}
 				log.Println(newMetric)
 			}
 		}
