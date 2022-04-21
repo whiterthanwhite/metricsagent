@@ -116,7 +116,7 @@ func createNewNetric(oldM metrics.Metric) metrics.Metrics {
 }
 
 func setUpHTTPClient(agentClient *http.Client) {
-	agentClient.Timeout = reportInterval * time.Second
+	agentClient.Timeout = 0 * time.Second
 }
 
 func enableTerminationSignals() {
@@ -215,7 +215,6 @@ func main() {
 				// sendOldUpdate(httpClient, &metric)
 				// new
 				newMetric := createNewNetric(metric)
-				log.Println(newMetric)
 				sendNewUpdate(httpClient, &newMetric)
 			}
 		}
