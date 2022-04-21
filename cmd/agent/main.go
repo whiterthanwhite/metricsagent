@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -40,13 +41,9 @@ func sendNewUpdate(agentClient *http.Client, m *metrics.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	var responseMetric metrics.Metrics
-	if err := json.NewDecoder(resp2.Body).Decode(&responseMetric); err != nil {
-		log.Println(err)
-	}
-	log.Println(responseMetric)
-	if err := resp2.Body.Close(); err != nil {
+	defer resp2.Body.Close()
+	_, err = io.Copy(io.Discard, resp2.Body)
+	if err != nil {
 		log.Fatal(err)
 	}
 	log.Println("new sended")
