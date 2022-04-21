@@ -151,18 +151,20 @@ func sendTestRequest(agentClient *http.Client, metricJSON string) {
 	}
 	requestBody := bytes.NewBuffer([]byte(metricJSON))
 	request, err := http.NewRequest(http.MethodPost, serverURL.String(), requestBody)
-	if err != nil {
-		log.Fatal(err)
-	}
-	request.Close = true
-	response, err := agentClient.Do(request)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer response.Body.Close()
-	_, err = io.Copy(io.Discard, response.Body)
-	if err != nil {
-		log.Fatal(err)
+	if err != io.EOF {
+		if err != nil {
+			log.Fatal(err)
+		}
+		request.Close = true
+		response, err := agentClient.Do(request)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer response.Body.Close()
+		_, err = io.Copy(io.Discard, response.Body)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	log.Println("Request sended successfully")
 }
@@ -207,10 +209,6 @@ func main() {
 				}
 			}
 			pollCount := addedMetrics["PollCount"]
-			switch v := pollCount.GetValue().(type) {
-			case int64:
-				counter += v
-			}
 			pollCount.UpdateValue(counter)
 			addedMetrics["PollCount"] = pollCount
 		case <-reportTicker.C:
