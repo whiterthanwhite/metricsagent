@@ -43,7 +43,7 @@ func sendNewUpdate(agentClient *http.Client, m *metrics.Metrics) {
 
 	_, err = agentClient.Do(agentRequest)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	log.Println("new sended")
@@ -179,6 +179,7 @@ func main() {
 
 	pollTicker := time.NewTicker(pollInterval * time.Second)
 	reportTicker := time.NewTicker(reportInterval * time.Second)
+	endTimer := time.NewTimer(1 * time.Minute)
 	defer pollTicker.Stop()
 	defer reportTicker.Stop()
 
@@ -210,6 +211,8 @@ func main() {
 				newMetric := createNewNetric(metric)
 				sendNewUpdate(httpClient, &newMetric)
 			}
+		case <-endTimer.C:
+			os.Exit(0)
 		}
 	}
 }
