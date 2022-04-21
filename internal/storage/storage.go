@@ -1,12 +1,18 @@
 package storage
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
+	"github.com/whiterthanwhite/metricsagent/internal/settings"
+)
+
+var (
+	StorageSettings = settings.GetSysSettings()
 )
 
 func OpenMetricFileCSV() *os.File {
@@ -64,4 +70,56 @@ func getMetricsFromFile(f *os.File, fi os.FileInfo) map[string]metrics.Metric {
 		}
 	}
 	return fileMetrics
+}
+
+type producer struct {
+	file    *os.File
+	encoder *json.Encoder
+}
+
+func NewProducer(fileName string) (*producer, error) {
+	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
+	if err != nil {
+		return nil, err
+	}
+	return &producer{
+		file:    file,
+		encoder: json.NewEncoder(file),
+	}, nil
+}
+
+func (p *producer) WriteMetrics(serverMetrics map[string]metrics.Metrics) error {
+	return p.encoder.Encode(serverMetrics)
+}
+
+func (p *producer) Close() error {
+	return p.file.Close()
+}
+
+type consumer struct {
+	file    *os.File
+	decoder *json.Decoder
+}
+
+func NewConsumer(fileName string) (*consumer, error) {
+	file, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0777)
+	if err != nil {
+		return nil, err
+	}
+	return &consumer{
+		file:    file,
+		decoder: json.NewDecoder(file),
+	}, nil
+}
+
+func (c *consumer) ReadMetrics() (map[string]metrics.Metrics, error) {
+	serverMetrics := make(map[string]metrics.Metrics)
+	if err := c.decoder.Decode(&serverMetrics); err != nil {
+		return nil, err
+	}
+	return serverMetrics, nil
+}
+
+func (c *consumer) Close() error {
+	return c.file.Close()
 }

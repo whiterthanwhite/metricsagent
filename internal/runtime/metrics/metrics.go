@@ -110,6 +110,18 @@ func GetAllMetrics() map[string]Metric {
 	return metrics
 }
 
+func GetAllNewMetrics() map[string]Metrics {
+	metricsDescription := GetStandardMetrics()
+	standardMetrics := make(map[string]Metrics)
+	for _, metricDescription := range metricsDescription {
+		standardMetrics[metricDescription.MName] = Metrics{
+			ID:    metricDescription.MName,
+			MType: metricDescription.MType,
+		}
+	}
+	return standardMetrics
+}
+
 func GetMetric(name string, mType string) Metric {
 	mt := metrictype(mType)
 	return createMetric(name, mt)

@@ -151,9 +151,9 @@ func main() {
 
 	addedMetrics := metrics.GetAllMetrics()
 
-	pollTicker := time.NewTicker(time.Duration(AgentSettings.PollInterval) * time.Second)
-	reportTicker := time.NewTicker(time.Duration(AgentSettings.ReportInterval) * time.Second)
-	endTimer := time.NewTimer(1 * time.Minute)
+	pollTicker := time.NewTicker(AgentSettings.PollInterval)
+	reportTicker := time.NewTicker(AgentSettings.ReportInterval)
+	endTimer := time.NewTimer(6 * time.Minute)
 	defer pollTicker.Stop()
 	defer reportTicker.Stop()
 

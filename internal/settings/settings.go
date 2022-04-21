@@ -13,12 +13,18 @@ type SysSettings struct {
 	Address        string
 	PollInterval   time.Duration
 	ReportInterval time.Duration
+	StoreInterval  time.Duration
+	StoreFile      string
+	Restore        bool
 }
 
 type EnvSysSettings struct {
 	Address        string `env:"ADDRESS" envDefault:"localhost:8080"`
 	PollInterval   string `env:"POLL_INTERVAL" envDefault:"2s"`
 	ReportInterval string `env:"REPORT_INTERVAL" envDefault:"10s"`
+	StoreInterval  string `env:"REPORT_INTERVAL" envDefault:"300s"`
+	StoreFile      string `env:"REPORT_INTERVAL" envDefault:"/tmp/devops-metrics-db.json"`
+	Restore        bool   `env:"REPORT_INTERVAL" envDefault:"true"`
 }
 
 func GetSysSettings() SysSettings {
@@ -35,6 +41,12 @@ func GetSysSettings() SysSettings {
 	values = strings.Split(envSysSettings.ReportInterval, "")
 	sysSettings.ReportInterval = parseDurationSettings(values)
 
+	values = strings.Split(envSysSettings.StoreInterval, "")
+	sysSettings.StoreInterval = parseDurationSettings(values)
+
+	sysSettings.StoreFile = envSysSettings.StoreFile
+	sysSettings.Restore = envSysSettings.Restore
+
 	return sysSettings
 }
 
@@ -50,5 +62,5 @@ func parseDurationSettings(values []string) time.Duration {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return time.Duration(v)
+	return time.Duration(v) * time.Second
 }
