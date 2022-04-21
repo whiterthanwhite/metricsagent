@@ -43,7 +43,7 @@ func sendNewUpdate(agentClient *http.Client, m *metrics.Metrics) {
 
 	_, err = agentClient.Do(agentRequest)
 	if err != nil {
-		log.Println(err)
+		log.Fatal(err)
 	}
 
 	log.Println("new sended")
