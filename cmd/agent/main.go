@@ -152,9 +152,13 @@ func sendTestRequest(agentClient *http.Client, metricJSON string) {
 		SetCloseConnection(true).
 		SetTimeout(0)
 
-	_, _ = restyClient.R().
+	_, err := restyClient.R().
 		SetBody(metricJSON).
 		Post("http://localhost:8080/update/")
+
+	if err != nil {
+		log.Println(err)
+	}
 
 	log.Println("Request sended successfully")
 }
