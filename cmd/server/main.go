@@ -1,14 +1,22 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
 	"github.com/whiterthanwhite/metricsagent/internal/handlers"
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
 	"github.com/whiterthanwhite/metricsagent/internal/storage"
+
+	"github.com/whiterthanwhite/metricsagent/internal/settings"
+)
+
+var (
+	ServerSettings = settings.GetSysSettings()
 )
 
 func getTempServerMetrics() map[string]metrics.Metrics {
@@ -76,5 +84,6 @@ func main() {
 		// r.Post("/", handlers.GetAllMetricsFromServer(serverMetrics))
 	})
 
-	log.Fatal(http.ListenAndServe(":8080", r))
+	port := fmt.Sprintf(":%v", strings.Split(ServerSettings.Address, ":")[1])
+	log.Fatal(http.ListenAndServe(port, r))
 }

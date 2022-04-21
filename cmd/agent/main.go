@@ -15,13 +15,12 @@ import (
 	"time"
 
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
+
+	"github.com/whiterthanwhite/metricsagent/internal/settings"
 )
 
-const (
-	pollInterval   = 2
-	reportInterval = 10
-	adress         = "127.0.0.1"
-	port           = "8080"
+var (
+	AgentSettings = settings.GetSysSettings()
 )
 
 func sendNewUpdate(agentClient *http.Client, m *metrics.Metrics) {
@@ -30,7 +29,7 @@ func sendNewUpdate(agentClient *http.Client, m *metrics.Metrics) {
 		log.Println(err)
 	}
 
-	urlString := fmt.Sprintf("http://%s:%s/update", adress, port)
+	urlString := fmt.Sprintf("http://%s/update", AgentSettings.Address)
 	requestBody := bytes.NewBuffer(bNewM)
 	agentRequest, err := http.NewRequest(http.MethodPost, urlString, requestBody)
 	if err != nil {
@@ -80,16 +79,14 @@ func getMetricURLString(m metrics.Metric) string {
 	stringURL := ""
 	switch v := m.GetValue().(type) {
 	case int64:
-		stringURL = fmt.Sprintf("http://%s:%s/update/%s/%s/%v",
-			adress,
-			port,
+		stringURL = fmt.Sprintf("http://%s/update/%s/%s/%v",
+			AgentSettings.Address,
 			m.GetTypeName(),
 			m.GetName(),
 			v)
 	case float64:
-		stringURL = fmt.Sprintf("http://%s:%s/update/%s/%s/%g",
-			adress,
-			port,
+		stringURL = fmt.Sprintf("http://%s/update/%s/%s/%g",
+			AgentSettings.Address,
 			m.GetTypeName(),
 			m.GetName(),
 			v)
@@ -153,8 +150,8 @@ func main() {
 
 	addedMetrics := metrics.GetAllMetrics()
 
-	pollTicker := time.NewTicker(pollInterval * time.Second)
-	reportTicker := time.NewTicker(reportInterval * time.Second)
+	pollTicker := time.NewTicker(time.Duration(AgentSettings.PollInterval) * time.Second)
+	reportTicker := time.NewTicker(time.Duration(AgentSettings.ReportInterval) * time.Second)
 	endTimer := time.NewTimer(1 * time.Minute)
 	defer pollTicker.Stop()
 	defer reportTicker.Stop()
