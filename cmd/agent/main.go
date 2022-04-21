@@ -18,7 +18,7 @@ const (
 	pollInterval   = 2
 	reportInterval = 10
 	adress         = "127.0.0.1"
-	port           = "8081"
+	port           = "8080"
 )
 
 func sendNewUpdate(agentClient *http.Client, m *metrics.Metrics) {
@@ -113,10 +113,39 @@ func setUpHTTPClient(agentClient *http.Client) {
 	agentClient.Timeout = 10 * time.Second
 }
 
+func sendTestRequest(agentClient *http.Client) {
+	urlString := "http://127.0.0.1:8080/update"
+	serverURL, err := url.Parse(urlString)
+	if err != nil {
+		log.Fatal(err)
+	}
+	requestBody := bytes.NewBuffer([]byte{})
+	request, err := http.NewRequest(http.MethodPost, serverURL.String(), requestBody)
+	if err != nil {
+		log.Fatal(err)
+	}
+	response, err := agentClient.Do(request)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer response.Body.Close()
+	_, err = io.Copy(io.Discard, response.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("Request sended successfully")
+}
+
 func main() {
 	log.Println("Start Metric Agent")
 	httpClient := &http.Client{}
 	setUpHTTPClient(httpClient)
+
+	time.Sleep(1 * time.Second)
+	sendTestRequest(httpClient)
+
+	return
+
 	addedMetrics := metrics.GetAllMetrics()
 
 	pollTicker := time.NewTicker(pollInterval * time.Second)
