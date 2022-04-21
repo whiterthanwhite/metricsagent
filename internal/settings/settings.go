@@ -50,5 +50,5 @@ func parseDurationSettings(values []string) time.Duration {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return time.Duration(v) * time.Second
+	return time.Duration(v)
 }
