@@ -85,5 +85,6 @@ func main() {
 	})
 
 	port := fmt.Sprintf(":%v", strings.Split(ServerSettings.Address, ":")[1])
+	log.Println(ServerSettings)
 	log.Fatal(http.ListenAndServe(port, r))
 }

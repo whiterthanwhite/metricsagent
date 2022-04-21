@@ -144,6 +144,7 @@ func enableTerminationSignals() {
 
 func main() {
 	log.Println("Start Metric Agent")
+	log.Println(AgentSettings)
 	go enableTerminationSignals()
 	httpClient := &http.Client{}
 	setUpHTTPClient(httpClient)
