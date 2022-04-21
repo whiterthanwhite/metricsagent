@@ -9,6 +9,9 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
@@ -110,7 +113,34 @@ func createNewNetric(oldM metrics.Metric) metrics.Metrics {
 }
 
 func setUpHTTPClient(agentClient *http.Client) {
-	agentClient.Timeout = 10 * time.Second
+	agentClient.Timeout = reportInterval * time.Second
+}
+
+func enableTerminationSignals() {
+	signalChannel := make(chan os.Signal, 1)
+	signal.Notify(
+		signalChannel,
+		syscall.SIGTERM,
+		syscall.SIGQUIT,
+		syscall.SIGINT)
+	exit_chan := make(chan int)
+	go func() {
+		for {
+			s := <-signalChannel
+			switch s {
+			case syscall.SIGTERM:
+				log.Println("Signal terminte triggered.")
+				exit_chan <- 0
+			case syscall.SIGQUIT:
+				log.Println("Signal quit triggered.")
+				exit_chan <- 0
+			case syscall.SIGINT:
+				log.Println("Signal interrupt triggered.")
+			}
+		}
+	}()
+	exitCode := <-exit_chan
+	os.Exit(exitCode)
 }
 
 func sendTestRequest(agentClient *http.Client, metricJSON string) {
@@ -124,6 +154,7 @@ func sendTestRequest(agentClient *http.Client, metricJSON string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	request.Close = true
 	response, err := agentClient.Do(request)
 	if err != nil {
 		log.Fatal(err)
@@ -138,6 +169,7 @@ func sendTestRequest(agentClient *http.Client, metricJSON string) {
 
 func main() {
 	log.Println("Start Metric Agent")
+	go enableTerminationSignals()
 	httpClient := &http.Client{}
 	setUpHTTPClient(httpClient)
 
@@ -147,7 +179,7 @@ func main() {
 		`{"id":"RandomValue","type":"gauge","value":"0.34567"}`,
 	}
 	for i := 0; i < len(metricsJSON); i++ {
-		time.Sleep(3 * time.Second)
+		time.Sleep(reportInterval * time.Second)
 		sendTestRequest(httpClient, metricsJSON[i])
 	}
 
