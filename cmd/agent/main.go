@@ -18,7 +18,7 @@ const (
 	pollInterval   = 2
 	reportInterval = 10
 	adress         = "127.0.0.1"
-	port           = "8080"
+	port           = "8081"
 )
 
 func sendNewUpdate(agentClient *http.Client, m *metrics.Metrics) {
