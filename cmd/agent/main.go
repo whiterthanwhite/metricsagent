@@ -155,7 +155,7 @@ func main() {
 				if err != nil {
 					log.Fatal(err)
 				}
-				resp, err := httpClient.Post(serverURL.String(), "application/json", nil)
+				resp, err := http.Post(serverURL.String(), "application/json", nil)
 				if err != nil {
 					log.Fatal(err)
 				}
