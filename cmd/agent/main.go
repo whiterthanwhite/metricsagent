@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -151,19 +150,25 @@ func sendTestRequest(agentClient *http.Client, metricJSON string) {
 		log.Fatal(err)
 	}
 	requestBody := bytes.NewBufferString(metricJSON)
-	request, err := http.NewRequest(http.MethodPost, serverURL.String(), requestBody)
-	if err != nil {
-		log.Fatal(err)
-	}
-	request.Header.Add("Content-Type", "application/json")
-	request.Header.Add("Content-Length", strconv.Itoa(requestBody.Len()))
-	// request.Close = true
-	response, err := agentClient.Do(request)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer response.Body.Close()
-	_, err = io.Copy(io.Discard, response.Body)
+	/*
+		request, err := http.NewRequest(http.MethodPost, serverURL.String(), requestBody)
+		if err != nil {
+			log.Fatal(err)
+		}
+		request.Header.Add("Content-Type", "application/json")
+		request.Header.Add("Content-Length", strconv.Itoa(requestBody.Len()))
+		// request.Close = true
+		response, err := agentClient.Do(request)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer response.Body.Close()
+		_, err = io.Copy(io.Discard, response.Body)
+		if err != nil {
+			log.Fatal(err)
+		}
+	*/
+	_, err = http.NewRequest(http.MethodGet, serverURL.String(), requestBody)
 	if err != nil {
 		log.Fatal(err)
 	}
