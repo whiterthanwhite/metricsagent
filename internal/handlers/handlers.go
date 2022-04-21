@@ -90,7 +90,6 @@ func UpdateMetricHandler(addedMetrics map[string]metrics.Metric, newMetrics map[
 			}
 		}
 
-		log.Println(m, nM)
 		rw.Header().Add("Content-Type", "text/plain")
 		rw.WriteHeader(http.StatusOK)
 	}
@@ -172,19 +171,19 @@ func GetAllMetricsFromServer(serverMetrics []metrics.Metrics) http.HandlerFunc {
 			http.Error(rw, "", http.StatusInternalServerError)
 		}
 		rw.Header().Set("Content-Type", "application/json")
-		rw.Write(metricsBytes)
+		if _, err := rw.Write(metricsBytes); err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 
 func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		log.Println(r.URL)
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
 			return
 		}
 
-		log.Println("Content-Length", r.ContentLength)
 		if r.ContentLength == 0 {
 			http.Error(rw, "", http.StatusBadRequest)
 			return
@@ -206,21 +205,18 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 				tempDelta := *m.Delta
 				tempDelta += *requestMetric.Delta
 				m.Delta = &tempDelta
-				log.Println(m, *m.Delta)
 			case metrics.GaugeType:
 				m.Value = requestMetric.Value
-				log.Println(m, *m.Value)
 			}
 			serverMetrics[requestMetric.ID] = m
 		}
 
-		log.Println("Update OK")
 		rw.Header().Set("Content-Type", "application/json")
 		_, err := rw.Write([]byte(`{}`))
 		if err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+			return
 		}
-
 	}
 }
 

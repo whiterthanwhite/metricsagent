@@ -50,8 +50,6 @@ func sendNewUpdate(agentClient *http.Client, m *metrics.Metrics) {
 			log.Println(err)
 		}
 	}
-
-	log.Println("new sended")
 }
 
 func sendOldUpdate(agentClient *http.Client, m *metrics.Metric) {
@@ -63,7 +61,6 @@ func sendOldUpdate(agentClient *http.Client, m *metrics.Metric) {
 	if err := resp.Body.Close(); err != nil {
 		log.Fatal(err)
 	}
-	log.Println("old sended")
 }
 
 func getMetricURL(m metrics.Metric) *url.URL {
@@ -145,6 +142,7 @@ func enableTerminationSignals() {
 func main() {
 	log.Println("Start Metric Agent")
 	log.Println(AgentSettings)
+
 	go enableTerminationSignals()
 	httpClient := &http.Client{}
 	setUpHTTPClient(httpClient)
@@ -152,10 +150,11 @@ func main() {
 	addedMetrics := metrics.GetAllMetrics()
 
 	pollTicker := time.NewTicker(AgentSettings.PollInterval)
-	reportTicker := time.NewTicker(AgentSettings.ReportInterval)
-	endTimer := time.NewTimer(6 * time.Minute)
 	defer pollTicker.Stop()
+	reportTicker := time.NewTicker(AgentSettings.ReportInterval)
 	defer reportTicker.Stop()
+	endTimer := time.NewTimer(1 * time.Minute)
+	defer endTimer.Stop()
 
 	for {
 		select {
@@ -177,8 +176,6 @@ func main() {
 		case <-reportTicker.C:
 			log.Println("Send Metrics To Server")
 			for _, metric := range addedMetrics {
-				log.Println(metric, metric.GetValue())
-
 				// old
 				// sendOldUpdate(httpClient, &metric)
 				// new

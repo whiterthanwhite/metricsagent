@@ -25,11 +25,10 @@ func startSaveMetricsOnFile(serverMetrics map[string]metrics.Metrics) {
 	}
 
 	saveTicker := time.NewTicker(ServerSettings.StoreInterval)
+	defer saveTicker.Stop()
 	for {
-		select {
-		case <-saveTicker.C:
-			saveMetricsOnFile(serverMetrics)
-		}
+		<-saveTicker.C
+		saveMetricsOnFile(serverMetrics)
 	}
 }
 
@@ -42,7 +41,9 @@ func saveMetricsOnFile(serverMetrics map[string]metrics.Metrics) {
 		log.Fatal(err)
 	}
 	defer producer.Close()
-	producer.WriteMetrics(serverMetrics)
+	if err := producer.WriteMetrics(serverMetrics); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func restoreMetricsFromFile() map[string]metrics.Metrics {
@@ -65,10 +66,13 @@ func restoreMetricsFromFile() map[string]metrics.Metrics {
 }
 
 func main() {
+	log.Println("Server start")
+	log.Println(ServerSettings)
+
 	newServerMetrics := restoreMetricsFromFile()
 	oldServerMetrics := metrics.GetAllMetrics()
 	defer saveMetricsOnFile(newServerMetrics)
-	go saveMetricsOnFile(newServerMetrics)
+	go startSaveMetricsOnFile(newServerMetrics)
 
 	r := chi.NewRouter()
 
@@ -88,6 +92,5 @@ func main() {
 	})
 
 	port := fmt.Sprintf(":%v", strings.Split(ServerSettings.Address, ":")[1])
-	log.Println(ServerSettings)
 	log.Fatal(http.ListenAndServe(port, r))
 }
