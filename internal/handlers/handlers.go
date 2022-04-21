@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 
 	//"io/ioutil"
 	"log"
@@ -185,32 +184,18 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 			return
 		}
 
+		log.Println("Content-Length", r.ContentLength)
 		if r.ContentLength == 0 {
 			http.Error(rw, "", http.StatusBadRequest)
 			return
 		}
 
 		var requestMetric metrics.Metrics
-		/*
-			if err := json.NewDecoder(r.Body).Decode(&requestMetric); err != nil {
-				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-				return
-			}
-			r.Body.Close()
-		*/
-
-		requestBody, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			http.Error(rw, fmt.Sprint(err), http.StatusBadRequest)
-			return
-		}
-		r.Body.Close()
-		log.Println(string(requestBody))
-
-		if err := json.Unmarshal(requestBody, &requestMetric); err != nil {
+		if err := json.NewDecoder(r.Body).Decode(&requestMetric); err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
 		}
+		r.Body.Close()
 
 		m, ok := serverMetrics[requestMetric.ID]
 		if !ok {
