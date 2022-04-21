@@ -119,7 +119,7 @@ func sendTestRequest(agentClient *http.Client) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	requestBody := bytes.NewBuffer([]byte{})
+	requestBody := bytes.NewBuffer([]byte("{}"))
 	request, err := http.NewRequest(http.MethodPost, serverURL.String(), requestBody)
 	if err != nil {
 		log.Fatal(err)
