@@ -100,18 +100,6 @@ func (cm *CounterMetric) UpdateValue(v interface{}) {
 	}
 }
 
-var (
-	counterMetrics = make(map[string]Metric)
-)
-
-func init() {
-	counterMetrics["PollCount"] = &CounterMetric{
-		Name:     "PollCount",
-		TypeName: CounterType,
-		Value:    0,
-	}
-}
-
 func GetAllMetrics() map[string]Metric {
 	metrics := make(map[string]Metric)
 	metricDescriptions := GetStandardMetrics()
