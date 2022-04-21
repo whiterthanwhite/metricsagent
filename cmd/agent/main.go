@@ -44,13 +44,14 @@ func sendNewUpdate(agentClient *http.Client, m *metrics.Metrics) {
 
 	resp2, err := agentClient.Do(agentRequest)
 	if err != nil {
-		// log.Fatal(err)
 		log.Println(err)
 	}
-	defer resp2.Body.Close()
-	_, err = io.Copy(io.Discard, resp2.Body)
-	if err != nil {
-		log.Fatal(err)
+	if resp2.Body != nil {
+		defer resp2.Body.Close()
+		_, err = io.Copy(io.Discard, resp2.Body)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	log.Println("new sended")
 }
@@ -167,17 +168,19 @@ func main() {
 	httpClient := &http.Client{}
 	setUpHTTPClient(httpClient)
 
-	metricsJSON := []string{
-		`{"id":"RandomValue","type":"gauge","value":"0.12345"}`,
-		`{"id":"RandomValue","type":"gauge","value":"0.23456"}`,
-		`{"id":"RandomValue","type":"gauge","value":"0.34567"}`,
-	}
-	for i := 0; i < len(metricsJSON); i++ {
-		time.Sleep(reportInterval * time.Second)
-		sendTestRequest(httpClient, metricsJSON[i])
-	}
+	/*
+		metricsJSON := []string{
+			`{"id":"RandomValue","type":"gauge","value":"0.12345"}`,
+			`{"id":"RandomValue","type":"gauge","value":"0.23456"}`,
+			`{"id":"RandomValue","type":"gauge","value":"0.34567"}`,
+		}
+		for i := 0; i < len(metricsJSON); i++ {
+			time.Sleep(reportInterval * time.Second)
+			sendTestRequest(httpClient, metricsJSON[i])
+		}
 
-	return
+		return
+	*/
 
 	addedMetrics := metrics.GetAllMetrics()
 
