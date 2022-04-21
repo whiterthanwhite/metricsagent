@@ -113,11 +113,20 @@ func GetAllMetrics() map[string]Metric {
 func GetAllNewMetrics() map[string]Metrics {
 	metricsDescription := GetStandardMetrics()
 	standardMetrics := make(map[string]Metrics)
+	var delta int64 = 0
+	var value float64 = 0.0
 	for _, metricDescription := range metricsDescription {
-		standardMetrics[metricDescription.MName] = Metrics{
+		tempMetric := Metrics{
 			ID:    metricDescription.MName,
 			MType: metricDescription.MType,
 		}
+		switch tempMetric.MType {
+		case CounterType:
+			tempMetric.Delta = &delta
+		case GaugeType:
+			tempMetric.Value = &value
+		}
+		standardMetrics[metricDescription.MName] = tempMetric
 	}
 	return standardMetrics
 }
