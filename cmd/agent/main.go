@@ -148,10 +148,15 @@ func enableTerminationSignals() {
 func sendTestRequest(agentClient *http.Client, metricJSON string) {
 	restyClient := resty.New()
 
+	restyClient.
+		SetCloseConnection(true).
+		SetTimeout(0)
+
 	_, err := restyClient.R().
 		SetBody(metricJSON).
 		Post("http://localhost:8080/update/")
 
+	log.Println("1")
 	if err != nil {
 		log.Fatal(err)
 	}
