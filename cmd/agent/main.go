@@ -46,7 +46,7 @@ func sendNewUpdate(agentClient *http.Client, m *metrics.Metrics) {
 	if err != nil {
 		log.Println(err)
 	}
-	if resp2.Body != nil {
+	if resp2 != nil {
 		defer resp2.Body.Close()
 		_, err = io.Copy(io.Discard, resp2.Body)
 		if err != nil {
