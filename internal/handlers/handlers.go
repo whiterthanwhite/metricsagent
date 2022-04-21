@@ -54,20 +54,20 @@ func UpdateMetricHandler(addedMetrics map[string]metrics.Metric, newMetrics map[
 		case metrics.CounterType:
 			value, err := strconv.ParseInt(mValue, 0, 64)
 			if err != nil {
-				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+				http.Error(rw, fmt.Sprint(err), http.StatusBadRequest)
 				return
 			}
 			m.UpdateValue(value)
 		case metrics.GaugeType:
 			value, err := strconv.ParseFloat(mValue, 64)
 			if err != nil {
-				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+				http.Error(rw, fmt.Sprint(err), http.StatusBadRequest)
 				return
 			}
 			m.UpdateValue(value)
 		}
-
 		addedMetrics[m.GetName()] = m
+
 		nM, ok := newMetrics[m.GetName()]
 		if !ok {
 			tempMetric := metrics.Metrics{

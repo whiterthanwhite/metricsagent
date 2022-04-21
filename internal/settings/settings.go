@@ -33,7 +33,9 @@ func GetSysSettings() SysSettings {
 		log.Fatal(err)
 	}
 	sysSettings := SysSettings{
-		Address: envSysSettings.Address,
+		Address:   envSysSettings.Address,
+		StoreFile: envSysSettings.StoreFile,
+		Restore:   envSysSettings.Restore,
 	}
 	values := strings.Split(envSysSettings.PollInterval, "")
 	sysSettings.PollInterval = parseDurationSettings(values)
@@ -43,9 +45,6 @@ func GetSysSettings() SysSettings {
 
 	values = strings.Split(envSysSettings.StoreInterval, "")
 	sysSettings.StoreInterval = parseDurationSettings(values)
-
-	sysSettings.StoreFile = envSysSettings.StoreFile
-	sysSettings.Restore = envSysSettings.Restore
 
 	return sysSettings
 }
