@@ -113,13 +113,13 @@ func setUpHTTPClient(agentClient *http.Client) {
 	agentClient.Timeout = 10 * time.Second
 }
 
-func sendTestRequest(agentClient *http.Client) {
+func sendTestRequest(agentClient *http.Client, metricJSON string) {
 	urlString := "http://127.0.0.1:8080/update"
 	serverURL, err := url.Parse(urlString)
 	if err != nil {
 		log.Fatal(err)
 	}
-	requestBody := bytes.NewBuffer([]byte("{}"))
+	requestBody := bytes.NewBuffer([]byte(metricJSON))
 	request, err := http.NewRequest(http.MethodPost, serverURL.String(), requestBody)
 	if err != nil {
 		log.Fatal(err)
@@ -141,8 +141,15 @@ func main() {
 	httpClient := &http.Client{}
 	setUpHTTPClient(httpClient)
 
-	time.Sleep(1 * time.Second)
-	sendTestRequest(httpClient)
+	metricsJSON := []string{
+		`{"id":"RandomValue","type":"gauge","value":"0.12345"}`,
+		`{"id":"RandomValue","type":"gauge","value":"0.23456"}`,
+		`{"id":"RandomValue","type":"gauge","value":"0.34567"}`,
+	}
+	for i := 0; i < len(metricsJSON); i++ {
+		time.Sleep(3 * time.Second)
+		sendTestRequest(httpClient, metricsJSON[i])
+	}
 
 	return
 
