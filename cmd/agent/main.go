@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -146,6 +147,7 @@ func main() {
 
 				// sendOldUpdate(&httpClient, &metric) // old
 				newMetric := createNewNetric(metric) // new
+				log.Println(newMetric)
 				// sendNewUpdate(&httpClient, &newMetric)
 
 				urlString := fmt.Sprintf("http://%v:%v/update", adress, port)
@@ -157,10 +159,11 @@ func main() {
 				if err != nil {
 					log.Fatal(err)
 				}
+				responseBody, err := ioutil.ReadAll(resp.Body)
 				if err := resp.Body.Close(); err != nil {
 					log.Fatal(err)
 				}
-				log.Println(newMetric)
+				log.Println(string(responseBody))
 			}
 		}
 	}
