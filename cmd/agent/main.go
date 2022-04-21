@@ -145,7 +145,7 @@ func enableTerminationSignals() {
 }
 
 func sendTestRequest(agentClient *http.Client, metricJSON string) {
-	urlString := "http://127.0.0.1:8080/update"
+	urlString := "http://127.0.0.1:8080/"
 	serverURL, err := url.Parse(urlString)
 	if err != nil {
 		log.Fatal(err)
