@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -42,17 +41,11 @@ func sendNewUpdate(agentClient *http.Client, m *metrics.Metrics) {
 	agentRequest.Header.Set("Content-Type", "application/json")
 	agentRequest.Header.Set("Content-Length", fmt.Sprint(requestBody.Len()))
 
-	resp2, err := agentClient.Do(agentRequest)
+	_, err = agentClient.Do(agentRequest)
 	if err != nil {
 		log.Println(err)
 	}
-	if resp2 != nil {
-		defer resp2.Body.Close()
-		_, err = io.Copy(io.Discard, resp2.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
+
 	log.Println("new sended")
 }
 
@@ -126,23 +119,23 @@ func enableTerminationSignals() {
 		syscall.SIGTERM,
 		syscall.SIGQUIT,
 		syscall.SIGINT)
-	exit_chan := make(chan int)
+	exitChan := make(chan int)
 	go func() {
 		for {
 			s := <-signalChannel
 			switch s {
 			case syscall.SIGTERM:
 				log.Println("Signal terminte triggered.")
-				exit_chan <- 0
+				exitChan <- 0
 			case syscall.SIGQUIT:
 				log.Println("Signal quit triggered.")
-				exit_chan <- 0
+				exitChan <- 0
 			case syscall.SIGINT:
 				log.Println("Signal interrupt triggered.")
 			}
 		}
 	}()
-	exitCode := <-exit_chan
+	exitCode := <-exitChan
 	os.Exit(exitCode)
 }
 
