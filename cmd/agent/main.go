@@ -32,6 +32,7 @@ func sendNewUpdate(agentClient *http.Client, m *metrics.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	agentRequest.Close = true
 	agentRequest.Header.Set("Content-Type", "application/json")
 	agentRequest.Header.Set("Content-Length", fmt.Sprint(requestBody.Len()))
 	resp2, err := agentClient.Do(agentRequest)
