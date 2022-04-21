@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -151,20 +152,20 @@ func sendTestRequest(agentClient *http.Client, metricJSON string) {
 	}
 	requestBody := bytes.NewBuffer([]byte(metricJSON))
 	request, err := http.NewRequest(http.MethodPost, serverURL.String(), requestBody)
-	if err != io.EOF {
-		if err != nil {
-			log.Fatal(err)
-		}
-		request.Close = true
-		response, err := agentClient.Do(request)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer response.Body.Close()
-		_, err = io.Copy(io.Discard, response.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
+	if err != nil {
+		log.Fatal(err)
+	}
+	request.Header.Add("Content-Type", "application/json")
+	request.Header.Add("Content-Length", strconv.Itoa(requestBody.Len()))
+	// request.Close = true
+	response, err := agentClient.Do(request)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer response.Body.Close()
+	_, err = io.Copy(io.Discard, response.Body)
+	if err != nil {
+		log.Fatal(err)
 	}
 	log.Println("Request sended successfully")
 }
