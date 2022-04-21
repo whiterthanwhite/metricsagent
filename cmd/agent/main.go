@@ -35,6 +35,7 @@ func sendNewUpdate(agentClient *http.Client, m *metrics.Metrics) {
 	agentRequest.Close = true
 	agentRequest.Header.Set("Content-Type", "application/json")
 	agentRequest.Header.Set("Content-Length", fmt.Sprint(requestBody.Len()))
+
 	resp2, err := agentClient.Do(agentRequest)
 	if err != nil {
 		log.Fatal(err)
@@ -110,9 +111,15 @@ func createNewNetric(oldM metrics.Metric) metrics.Metrics {
 	return newM
 }
 
+func setUpHTTPClient(agentClient *http.Client) {
+	agentClient.Timeout = 1 * time.Second
+}
+
 func main() {
 	log.Println("Start Metric Agent")
 	httpClient := &http.Client{}
+	setUpHTTPClient(httpClient)
+	log.Println(httpClient.Timeout)
 	addedMetrics := metrics.GetAllMetrics()
 
 	pollTicker := time.NewTicker(pollInterval * time.Second)
@@ -146,8 +153,10 @@ func main() {
 			for _, metric := range addedMetrics {
 				log.Println(metric, metric.GetValue())
 
-				// sendOldUpdate(httpClient, &metric) // old
-				newMetric := createNewNetric(metric) // new
+				// old
+				// sendOldUpdate(httpClient, &metric)
+				// new
+				newMetric := createNewNetric(metric)
 				log.Println(newMetric)
 				sendNewUpdate(httpClient, &newMetric)
 			}
