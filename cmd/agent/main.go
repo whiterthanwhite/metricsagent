@@ -150,7 +150,7 @@ func sendTestRequest(agentClient *http.Client, metricJSON string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	requestBody := bytes.NewBuffer([]byte(metricJSON))
+	requestBody := bytes.NewBufferString(metricJSON)
 	request, err := http.NewRequest(http.MethodPost, serverURL.String(), requestBody)
 	if err != nil {
 		log.Fatal(err)

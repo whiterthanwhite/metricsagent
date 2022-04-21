@@ -209,14 +209,9 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 				log.Println(m, *m.Delta)
 			case metrics.GaugeType:
 				m.Value = requestMetric.Value
-				if m.ID == "RandomValue" {
-					log.Println(m, *m.Value)
-				}
+				log.Println(m, *m.Value)
 			}
 			serverMetrics[requestMetric.ID] = m
-			if m.ID == "RandomValue" {
-				log.Println(serverMetrics[requestMetric.ID], m)
-			}
 		}
 
 		log.Println("Update OK")
