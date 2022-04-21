@@ -72,7 +72,7 @@ func main() {
 	newServerMetrics := restoreMetricsFromFile()
 	oldServerMetrics := metrics.GetAllMetrics()
 	defer saveMetricsOnFile(newServerMetrics)
-	go startSaveMetricsOnFile(newServerMetrics)
+	// go startSaveMetricsOnFile(newServerMetrics)
 
 	r := chi.NewRouter()
 
