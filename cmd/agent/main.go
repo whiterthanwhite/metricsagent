@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -41,9 +42,16 @@ func sendNewUpdate(agentClient *http.Client, m *metrics.Metrics) {
 	agentRequest.Header.Set("Content-Type", "application/json")
 	agentRequest.Header.Set("Content-Length", fmt.Sprint(requestBody.Len()))
 
-	_, err = agentClient.Do(agentRequest)
+	resp, err := agentClient.Do(agentRequest)
 	if err != nil {
 		log.Println(err)
+	}
+	if resp != nil {
+		defer resp.Body.Close()
+		_, err := io.Copy(io.Discard, resp.Body)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 
 	log.Println("new sended")
