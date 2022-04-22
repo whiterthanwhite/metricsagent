@@ -70,25 +70,18 @@ func UpdateMetricHandler(addedMetrics map[string]metrics.Metric, newMetrics map[
 
 		nM, ok := newMetrics[m.GetName()]
 		if !ok {
-			tempMetric := metrics.Metrics{
+			nM = metrics.Metrics{
 				ID:    m.GetName(),
 				MType: m.GetTypeName(),
 			}
-			switch v := m.GetValue().(type) {
-			case int64:
-				tempMetric.Delta = &v
-			case float64:
-				tempMetric.Value = &v
-			}
-			newMetrics[tempMetric.ID] = tempMetric
-		} else {
-			switch v := m.GetValue().(type) {
-			case int64:
-				nM.Delta = &v
-			case float64:
-				nM.Value = &v
-			}
 		}
+		switch v := m.GetValue().(type) {
+		case int64:
+			nM.Delta = &v
+		case float64:
+			nM.Value = &v
+		}
+		newMetrics[nM.ID] = nM
 
 		rw.Header().Add("Content-Type", "text/plain")
 		rw.WriteHeader(http.StatusOK)
