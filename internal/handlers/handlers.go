@@ -283,6 +283,7 @@ func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerF
 		}
 
 		rw.Header().Set("Content-Type", "application/json")
+		rw.Header().Set("Content-Encoding", "gzip")
 		if _, err = rw.Write(returnMetric); err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
