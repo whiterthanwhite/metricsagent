@@ -109,7 +109,7 @@ func main() {
 	r := chi.NewRouter()
 
 	r.Route("/", func(r chi.Router) {
-		r.Get("/", handlers.GetAllMetricsFromFile(oldServerMetrics))
+		r.Get("/", handlers.GetAllMetricsFromFile(oldServerMetrics, newServerMetrics))
 		r.Route("/update", func(r chi.Router) {
 			r.Post("/", handlers.UpdateMetricOnServer(newServerMetrics))
 			r.Post("/{metricType}/{metricName}/{metricValue}",
