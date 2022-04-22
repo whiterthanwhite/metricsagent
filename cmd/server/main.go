@@ -97,6 +97,7 @@ func main() {
 	log.Println(ServerSettings)
 
 	newServerMetrics := restoreMetricsFromFile()
+	log.Println(newServerMetrics)
 	oldServerMetrics := metrics.GetAllMetrics()
 	defer saveMetricsOnFile(newServerMetrics)
 	go startSaveMetricsOnFile(newServerMetrics)
