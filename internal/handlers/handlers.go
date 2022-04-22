@@ -206,6 +206,7 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 			}
 			serverMetrics[requestMetric.ID] = m
 		}
+		log.Println(requestMetric, m)
 
 		rw.Header().Set("Content-Type", "application/json")
 		_, err := rw.Write([]byte(`{}`))
