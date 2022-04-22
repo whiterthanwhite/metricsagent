@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 
@@ -246,10 +248,28 @@ func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerF
 		}
 
 		rw.Header().Set("Content-Type", "application/json")
-		_, err = rw.Write(returnMetric)
-		if err != nil {
-			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-			return
+		if r.Header.Get("Accept-Encoding") == "gzip" {
+			var encodedBuffer bytes.Buffer
+			gzipW := gzip.NewWriter(&encodedBuffer)
+			if _, err := gzipW.Write(returnMetric); err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if err := gzipW.Close(); err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			_, err = rw.Write(encodedBuffer.Bytes())
+			if err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			_, err = rw.Write(returnMetric)
+			if err != nil {
+				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+				return
+			}
 		}
 	}
 }
