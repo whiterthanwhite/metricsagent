@@ -174,9 +174,6 @@ func GetAllMetricsFromServer(serverMetrics []metrics.Metrics) http.HandlerFunc {
 
 func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		log.Println(r.Header.Get("Content-Encoding"))
-		log.Println(r.Header.Get("Accept-Encoding"))
-
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
 			return
@@ -224,9 +221,6 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 
 func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		log.Println(r.Header.Get("Content-Encoding"))
-		log.Println(r.Header.Get("Accept-Encoding"))
-
 		var requestMetric metrics.Metrics
 		if err := json.NewDecoder(r.Body).Decode(&requestMetric); err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
@@ -249,6 +243,7 @@ func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerF
 
 		rw.Header().Set("Content-Type", "application/json")
 		if r.Header.Get("Accept-Encoding") == "gzip" {
+			rw.Header().Set("Content-Encoding", "gzip")
 			var encodedBuffer bytes.Buffer
 			gzipW := gzip.NewWriter(&encodedBuffer)
 			if _, err := gzipW.Write(returnMetric); err != nil {
