@@ -83,22 +83,25 @@ func main() {
 	log.Println("Server start")
 
 	flag.Parse()
+	log.Println(ServerSettings.Address, *flagAddress)
 	if ServerSettings.Address == settings.DefaultAddress {
 		ServerSettings.Address = *flagAddress
 	}
+	log.Println(ServerSettings.Restore, *flagRestore)
 	if ServerSettings.Restore == settings.DefaultRestore {
 		ServerSettings.Restore = *flagRestore
 	}
+	log.Println(ServerSettings.StoreInterval, *flagStoreInterval)
 	if ServerSettings.StoreInterval == settings.DefaultStoreInterval {
 		ServerSettings.StoreInterval = *flagStoreInterval
 	}
+	log.Println(ServerSettings.StoreFile, *flagStoreFile)
 	if ServerSettings.StoreFile == settings.DefaultStoreFile {
 		ServerSettings.StoreFile = *flagStoreFile
 	}
 	log.Println(ServerSettings)
 
 	newServerMetrics := restoreMetricsFromFile()
-	log.Println(newServerMetrics)
 	oldServerMetrics := metrics.GetAllMetrics()
 	defer saveMetricsOnFile(newServerMetrics)
 	go startSaveMetricsOnFile(newServerMetrics)
