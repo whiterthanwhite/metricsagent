@@ -192,6 +192,7 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 		m, ok := serverMetrics[requestMetric.ID]
 		if !ok {
 			serverMetrics[requestMetric.ID] = requestMetric
+			log.Println(requestMetric)
 		} else {
 			switch m.MType {
 			case metrics.CounterType:
@@ -206,7 +207,6 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 			}
 			serverMetrics[requestMetric.ID] = m
 		}
-		log.Println("update", requestMetric, m)
 
 		rw.Header().Set("Content-Type", "application/json")
 		_, err := rw.Write([]byte(`{}`))

@@ -80,7 +80,6 @@ func restoreMetricsFromFile() map[string]metrics.Metrics {
 
 func main() {
 	log.Println("Server start")
-	log.Println(ServerSettings)
 
 	flag.Parse()
 	if ServerSettings.Address == settings.DefaultAddress {
@@ -95,6 +94,7 @@ func main() {
 	if ServerSettings.StoreFile == settings.DefaultStoreFile {
 		ServerSettings.StoreFile = *flagStoreFile
 	}
+	log.Println(ServerSettings)
 
 	newServerMetrics := restoreMetricsFromFile()
 	oldServerMetrics := metrics.GetAllMetrics()
@@ -119,5 +119,8 @@ func main() {
 	})
 
 	port := fmt.Sprintf(":%v", strings.Split(ServerSettings.Address, ":")[1])
-	log.Fatal(http.ListenAndServe(port, r))
+	if err := http.ListenAndServe(port, r); err != nil {
+		log.Fatal(err)
+	}
+	log.Println("Server Stop")
 }
