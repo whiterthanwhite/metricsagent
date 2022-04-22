@@ -24,5 +24,8 @@ vendor/
 .idea
 .vscode
 
-# Helper files
+# System files
 *.DS_store
+
+# Agent files
+*tmp/*
