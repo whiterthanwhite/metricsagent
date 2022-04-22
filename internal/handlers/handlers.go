@@ -112,16 +112,46 @@ func GetMetricValueFromServer(addedMetrics map[string]metrics.Metric) http.Handl
 	}
 }
 
-func GetAllMetricsFromFile(addedMetrics map[string]metrics.Metric) http.HandlerFunc {
+func GetAllMetricsFromFile(addedMetrics map[string]metrics.Metric, newServerMetrics map[string]metrics.Metrics) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		responseWriterWriteCheck(rw, []byte("<html><body>"))
-		for _, m := range addedMetrics {
-			responseWriterWriteCheck(rw, []byte(fmt.Sprintf(
-				"<p>Name: %v; Value: %v</p><br>",
-				m.GetName(), m.GetValue())))
+		if r.Header.Get("Accept-Encoding") == "gzip" {
+			rw.Header().Set("Content-Encoding", "gzip")
+			var returnBuffer bytes.Buffer
+			gzipW := gzip.NewWriter(&returnBuffer)
+			if _, err := gzipW.Write([]byte("<html><body>")); err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			for _, m := range newServerMetrics {
+				htmlString := ""
+				switch m.MType {
+				case metrics.CounterType:
+					htmlString = fmt.Sprintf("<p>Name: %v; Value: %v</p><br>", m.ID, *m.Delta)
+				case metrics.GaugeType:
+					htmlString = fmt.Sprintf("<p>Name: %v; Value: %v</p><br>", m.ID, *m.Value)
+				}
+				if _, err := gzipW.Write([]byte(htmlString)); err != nil {
+					http.Error(rw, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+			if _, err := gzipW.Write([]byte("</body></html>")); err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if _, err := rw.Write(returnBuffer.Bytes()); err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			responseWriterWriteCheck(rw, []byte("<html><body>"))
+			for _, m := range addedMetrics {
+				responseWriterWriteCheck(rw, []byte(fmt.Sprintf(
+					"<p>Name: %v; Value: %v</p><br>",
+					m.GetName(), m.GetValue())))
+			}
+			responseWriterWriteCheck(rw, []byte("</body></html>"))
 		}
-		responseWriterWriteCheck(rw, []byte("</body></html>"))
-		rw.WriteHeader(http.StatusOK)
 	}
 }
 
