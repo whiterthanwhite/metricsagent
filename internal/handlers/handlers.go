@@ -206,7 +206,7 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 			}
 			serverMetrics[requestMetric.ID] = m
 		}
-		log.Println(requestMetric, m)
+		log.Println("update", requestMetric, m)
 
 		rw.Header().Set("Content-Type", "application/json")
 		_, err := rw.Write([]byte(`{}`))
@@ -227,7 +227,7 @@ func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerF
 		r.Body.Close()
 
 		m, ok := serverMetrics[requestMetric.ID]
-		log.Println(requestMetric, m, ok)
+		log.Println("get", requestMetric, m, ok)
 		if !ok {
 			http.Error(rw, "metric is not found", http.StatusNotFound)
 			return
