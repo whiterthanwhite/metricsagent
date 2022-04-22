@@ -142,6 +142,7 @@ func enableTerminationSignals() {
 				exitChan <- 0
 			case syscall.SIGINT:
 				log.Println("Signal interrupt triggered.")
+				exitChan <- 0
 			}
 		}
 	}()
