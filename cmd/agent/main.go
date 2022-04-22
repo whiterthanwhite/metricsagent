@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -20,8 +21,17 @@ import (
 )
 
 var (
-	AgentSettings = settings.GetSysSettings()
+	AgentSettings      = settings.GetSysSettings()
+	flagAddress        *string
+	flagReportInterval *time.Duration
+	flagPollInterval   *time.Duration
 )
+
+func init() {
+	flagAddress = flag.String("a", settings.DefaultAddress, "")
+	flagReportInterval = flag.Duration("r", settings.DefaultReportInterval, "")
+	flagPollInterval = flag.Duration("p", settings.DefaultPollInterval, "")
+}
 
 func sendNewUpdate(agentClient *http.Client, m *metrics.Metrics) {
 	bNewM, err := json.Marshal(*m)
@@ -142,6 +152,17 @@ func enableTerminationSignals() {
 func main() {
 	log.Println("Start Metric Agent")
 	log.Println(AgentSettings)
+
+	flag.Parse()
+	if AgentSettings.Address == settings.DefaultAddress {
+		AgentSettings.Address = *flagAddress
+	}
+	if AgentSettings.PollInterval == settings.DefaultPollInterval {
+		AgentSettings.PollInterval = *flagPollInterval
+	}
+	if AgentSettings.ReportInterval == settings.DefaultReportInterval {
+		AgentSettings.ReportInterval = *flagReportInterval
+	}
 
 	go enableTerminationSignals()
 	httpClient := &http.Client{}

@@ -7,6 +7,15 @@ import (
 	"github.com/caarlos0/env"
 )
 
+const (
+	DefaultAddress        string        = "localhost:8080"
+	DefaultReportInterval time.Duration = 10 * time.Second
+	DefaultPollInterval   time.Duration = 2 * time.Second
+	DefaultStoreInterval  time.Duration = 300 * time.Second
+	DefaultStoreFile      string        = "/tmp/devops-metrics-db.json"
+	DefaultRestore        bool          = true
+)
+
 type SysSettings struct {
 	Address        string        `env:"ADDRESS" envDefault:"localhost:8080"`
 	PollInterval   time.Duration `env:"POLL_INTERVAL" envDefault:"2s"`

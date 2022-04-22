@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -16,8 +17,19 @@ import (
 )
 
 var (
-	ServerSettings = settings.GetSysSettings()
+	ServerSettings    = settings.GetSysSettings()
+	flagAddress       *string
+	flagRestore       *bool
+	flagStoreInterval *time.Duration
+	flagStoreFile     *string
 )
+
+func init() {
+	flagAddress = flag.String("a", settings.DefaultAddress, "")
+	flagRestore = flag.Bool("r", settings.DefaultRestore, "")
+	flagStoreInterval = flag.Duration("i", settings.DefaultStoreInterval, "")
+	flagStoreFile = flag.String("f", settings.DefaultStoreFile, "")
+}
 
 func startSaveMetricsOnFile(serverMetrics map[string]metrics.Metrics) {
 	if ServerSettings.StoreFile == "" {
@@ -68,6 +80,20 @@ func restoreMetricsFromFile() map[string]metrics.Metrics {
 func main() {
 	log.Println("Server start")
 	log.Println(ServerSettings)
+
+	flag.Parse()
+	if ServerSettings.Address == settings.DefaultAddress {
+		ServerSettings.Address = *flagAddress
+	}
+	if ServerSettings.Restore == settings.DefaultRestore {
+		ServerSettings.Restore = *flagRestore
+	}
+	if ServerSettings.StoreInterval == settings.DefaultStoreInterval {
+		ServerSettings.StoreInterval = *flagStoreInterval
+	}
+	if ServerSettings.StoreFile == settings.DefaultStoreFile {
+		ServerSettings.StoreFile = *flagStoreFile
+	}
 
 	newServerMetrics := restoreMetricsFromFile()
 	oldServerMetrics := metrics.GetAllMetrics()
