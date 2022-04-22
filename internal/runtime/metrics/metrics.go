@@ -114,7 +114,7 @@ func GetAllNewMetrics() map[string]Metrics {
 	metricsDescription := GetStandardMetrics()
 	standardMetrics := make(map[string]Metrics)
 	var delta int64 = 0
-	var value float64 = 0.0
+	value := 0.0
 	for _, metricDescription := range metricsDescription {
 		tempMetric := Metrics{
 			ID:    metricDescription.MName,
