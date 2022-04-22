@@ -5,8 +5,6 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-
-	//"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -114,6 +112,7 @@ func GetMetricValueFromServer(addedMetrics map[string]metrics.Metric) http.Handl
 
 func GetAllMetricsFromFile(addedMetrics map[string]metrics.Metric, newServerMetrics map[string]metrics.Metrics) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Set("Content-Type", "text/html")
 		if r.Header.Get("Accept-Encoding") == "gzip" {
 			rw.Header().Set("Content-Encoding", "gzip")
 			var returnBuffer bytes.Buffer
