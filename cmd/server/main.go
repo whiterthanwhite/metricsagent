@@ -89,7 +89,7 @@ func main() {
 	}
 	log.Println(ServerSettings.Restore, *flagRestore)
 	if ServerSettings.Restore == settings.DefaultRestore {
-		ServerSettings.Restore = *flagRestore
+		ServerSettings.Restore = ServerSettings.Restore || *flagRestore
 	}
 	log.Println(ServerSettings.StoreInterval, *flagStoreInterval)
 	if ServerSettings.StoreInterval == settings.DefaultStoreInterval {
