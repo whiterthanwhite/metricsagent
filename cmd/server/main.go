@@ -56,6 +56,7 @@ func saveMetricsOnFile(serverMetrics map[string]metrics.Metrics) {
 	if err := producer.WriteMetrics(serverMetrics); err != nil {
 		log.Fatal(err)
 	}
+	log.Println(serverMetrics)
 	log.Println("Saved")
 }
 

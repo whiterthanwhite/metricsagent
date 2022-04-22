@@ -151,7 +151,6 @@ func enableTerminationSignals() {
 
 func main() {
 	log.Println("Start Metric Agent")
-	log.Println(AgentSettings)
 
 	flag.Parse()
 	if AgentSettings.Address == settings.DefaultAddress {
@@ -163,8 +162,10 @@ func main() {
 	if AgentSettings.ReportInterval == settings.DefaultReportInterval {
 		AgentSettings.ReportInterval = *flagReportInterval
 	}
+	log.Println(AgentSettings)
 
 	go enableTerminationSignals()
+
 	httpClient := &http.Client{}
 	setUpHTTPClient(httpClient)
 
