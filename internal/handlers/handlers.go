@@ -226,6 +226,7 @@ func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerF
 		r.Body.Close()
 
 		m, ok := serverMetrics[requestMetric.ID]
+		log.Println(m, ok)
 		if !ok {
 			http.Error(rw, "metric is not found", http.StatusNotFound)
 			return
