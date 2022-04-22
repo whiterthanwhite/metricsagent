@@ -56,8 +56,6 @@ func saveMetricsOnFile(serverMetrics map[string]metrics.Metrics) {
 	if err := producer.WriteMetrics(serverMetrics); err != nil {
 		log.Fatal(err)
 	}
-	log.Println(serverMetrics)
-	log.Println("Saved")
 }
 
 func restoreMetricsFromFile() map[string]metrics.Metrics {
@@ -72,6 +70,8 @@ func restoreMetricsFromFile() map[string]metrics.Metrics {
 		if err != nil {
 			log.Println(err)
 		}
+		log.Println(serverMetrics)
+		log.Println("restored")
 	}
 	if serverMetrics == nil {
 		serverMetrics = metrics.GetAllNewMetrics()
