@@ -70,7 +70,6 @@ func restoreMetricsFromFile() map[string]metrics.Metrics {
 		if err != nil {
 			log.Println(err)
 		}
-		log.Println(serverMetrics)
 		log.Println("restored")
 	}
 	if serverMetrics == nil {

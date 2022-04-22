@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 
@@ -183,11 +185,26 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 		}
 
 		var requestMetric metrics.Metrics
-		if err := json.NewDecoder(r.Body).Decode(&requestMetric); err != nil {
-			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-			return
+		if r.Header.Get("Content-Encoding") == "gzip" {
+			gzipNR, err := gzip.NewReader(r.Body)
+			if err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			r.Body.Close()
+			defer gzipNR.Close()
+
+			if err := json.NewDecoder(gzipNR).Decode(&requestMetric); err != nil {
+				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			if err := json.NewDecoder(r.Body).Decode(&requestMetric); err != nil {
+				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+				return
+			}
+			r.Body.Close()
 		}
-		r.Body.Close()
 
 		m, ok := serverMetrics[requestMetric.ID]
 		if !ok {
@@ -220,11 +237,26 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		var requestMetric metrics.Metrics
-		if err := json.NewDecoder(r.Body).Decode(&requestMetric); err != nil {
-			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-			return
+		if r.Header.Get("Content-Encoding") == "gzip" {
+			gzipNR, err := gzip.NewReader(r.Body)
+			if err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			r.Body.Close()
+			defer gzipNR.Close()
+
+			if err := json.NewDecoder(gzipNR).Decode(&requestMetric); err != nil {
+				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			if err := json.NewDecoder(r.Body).Decode(&requestMetric); err != nil {
+				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+				return
+			}
+			r.Body.Close()
 		}
-		r.Body.Close()
 
 		m, ok := serverMetrics[requestMetric.ID]
 		log.Println("get", requestMetric, m, ok)
@@ -239,9 +271,19 @@ func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerF
 			return
 		}
 
+		returnBuffer := bytes.NewBuffer(returnMetric)
+		gzipWriter := gzip.NewWriter(returnBuffer)
+		if err := gzipWriter.Flush(); err != nil {
+			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+			return
+		}
+		if err := gzipWriter.Close(); err != nil {
+			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+			return
+		}
+
 		rw.Header().Set("Content-Type", "application/json")
-		_, err = rw.Write(returnMetric)
-		if err != nil {
+		if _, err = rw.Write(returnMetric); err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
 		}
