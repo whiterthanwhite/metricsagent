@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
-
 	"github.com/whiterthanwhite/metricsagent/internal/settings"
 )
 

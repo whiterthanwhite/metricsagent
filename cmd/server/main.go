@@ -48,7 +48,7 @@ func saveMetricsOnFile(serverMetrics map[string]metrics.Metrics) {
 	if ServerSettings.StoreFile == "" {
 		return
 	}
-	producer, err := storage.NewProducer(ServerSettings.StoreFile)
+	producer, err := storage.NewMetricsWriter(ServerSettings.StoreFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func saveMetricsOnFile(serverMetrics map[string]metrics.Metrics) {
 func restoreMetricsFromFile() map[string]metrics.Metrics {
 	var serverMetrics map[string]metrics.Metrics = nil
 	if ServerSettings.Restore && ServerSettings.StoreFile != "" {
-		consumer, err := storage.NewConsumer(ServerSettings.StoreFile)
+		consumer, err := storage.NewMetricsReader(ServerSettings.StoreFile)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -70,8 +70,6 @@ func restoreMetricsFromFile() map[string]metrics.Metrics {
 		if err != nil {
 			log.Println(err)
 		}
-		log.Println(serverMetrics)
-		log.Println("restored")
 	}
 	if serverMetrics == nil {
 		serverMetrics = metrics.GetAllNewMetrics()

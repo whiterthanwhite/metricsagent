@@ -72,47 +72,47 @@ func getMetricsFromFile(f *os.File, fi os.FileInfo) map[string]metrics.Metric {
 	return fileMetrics
 }
 
-type producer struct {
+type metricsWriter struct {
 	file    *os.File
 	encoder *json.Encoder
 }
 
-func NewProducer(fileName string) (*producer, error) {
+func NewMetricsWriter(fileName string) (*metricsWriter, error) {
 	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
 		return nil, err
 	}
-	return &producer{
+	return &metricsWriter{
 		file:    file,
 		encoder: json.NewEncoder(file),
 	}, nil
 }
 
-func (p *producer) WriteMetrics(serverMetrics map[string]metrics.Metrics) error {
+func (p *metricsWriter) WriteMetrics(serverMetrics map[string]metrics.Metrics) error {
 	return p.encoder.Encode(serverMetrics)
 }
 
-func (p *producer) Close() error {
+func (p *metricsWriter) Close() error {
 	return p.file.Close()
 }
 
-type consumer struct {
+type metricsReader struct {
 	file    *os.File
 	decoder *json.Decoder
 }
 
-func NewConsumer(fileName string) (*consumer, error) {
+func NewMetricsReader(fileName string) (*metricsReader, error) {
 	file, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {
 		return nil, err
 	}
-	return &consumer{
+	return &metricsReader{
 		file:    file,
 		decoder: json.NewDecoder(file),
 	}, nil
 }
 
-func (c *consumer) ReadMetrics() (map[string]metrics.Metrics, error) {
+func (c *metricsReader) ReadMetrics() (map[string]metrics.Metrics, error) {
 	serverMetrics := make(map[string]metrics.Metrics)
 	if err := c.decoder.Decode(&serverMetrics); err != nil {
 		return nil, err
@@ -120,6 +120,6 @@ func (c *consumer) ReadMetrics() (map[string]metrics.Metrics, error) {
 	return serverMetrics, nil
 }
 
-func (c *consumer) Close() error {
+func (c *metricsReader) Close() error {
 	return c.file.Close()
 }

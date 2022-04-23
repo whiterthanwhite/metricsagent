@@ -36,31 +36,31 @@ type GaugeMetric struct {
 	Name     string
 	TypeName metrictype
 	Value    gauge
-	mu       sync.Mutex
+	mu       sync.RWMutex
 }
 
 type CounterMetric struct {
 	Name     string
 	TypeName metrictype
 	Value    counter
-	mu       sync.Mutex
+	mu       sync.RWMutex
 }
 
 func (gm *GaugeMetric) GetName() string {
-	gm.mu.Lock()
-	defer gm.mu.Unlock()
+	gm.mu.RLock()
+	defer gm.mu.RUnlock()
 	return gm.Name
 }
 
 func (gm *GaugeMetric) GetTypeName() metrictype {
-	gm.mu.Lock()
-	defer gm.mu.Unlock()
+	gm.mu.RLock()
+	defer gm.mu.RUnlock()
 	return gm.TypeName
 }
 
 func (gm *GaugeMetric) GetValue() interface{} {
-	gm.mu.Lock()
-	defer gm.mu.Unlock()
+	gm.mu.RLock()
+	defer gm.mu.RUnlock()
 	return float64(gm.Value)
 }
 
@@ -74,20 +74,20 @@ func (gm *GaugeMetric) UpdateValue(v interface{}) {
 }
 
 func (cm *CounterMetric) GetName() string {
-	cm.mu.Lock()
-	defer cm.mu.Unlock()
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
 	return cm.Name
 }
 
 func (cm *CounterMetric) GetTypeName() metrictype {
-	cm.mu.Lock()
-	defer cm.mu.Unlock()
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
 	return cm.TypeName
 }
 
 func (cm *CounterMetric) GetValue() interface{} {
-	cm.mu.Lock()
-	defer cm.mu.Unlock()
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
 	return int64(cm.Value)
 }
 
@@ -113,8 +113,6 @@ func GetAllMetrics() map[string]Metric {
 func GetAllNewMetrics() map[string]Metrics {
 	metricsDescription := GetStandardMetrics()
 	standardMetrics := make(map[string]Metrics)
-	var delta int64 = 0
-	value := 0.0
 	for _, metricDescription := range metricsDescription {
 		tempMetric := Metrics{
 			ID:    metricDescription.MName,
@@ -122,8 +120,10 @@ func GetAllNewMetrics() map[string]Metrics {
 		}
 		switch tempMetric.MType {
 		case CounterType:
-			tempMetric.Delta = &delta
+			var value int64 = 0
+			tempMetric.Delta = &value
 		case GaugeType:
+			value := 0.0
 			tempMetric.Value = &value
 		}
 		standardMetrics[metricDescription.MName] = tempMetric
