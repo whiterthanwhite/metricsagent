@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/hmac"
-	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -225,14 +225,23 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettin
 
 		// Check hash key >>
 		if serverSettings.Key != "" {
-			h := hmac.New(sha256.New, []byte(serverSettings.Key))
-			h.Write([]byte{})
-			check := h.Sum(nil)
-			if !hmac.Equal(check, []byte(requestMetric.Hash)) {
+			requestHash, err := hex.DecodeString(requestMetric.Hash)
+			if err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			s := requestMetric.GenerateHash(serverSettings.Key)
+			checkHash, err := hex.DecodeString(s)
+			if err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if !hmac.Equal(requestHash, checkHash) {
 				http.Error(rw, "", http.StatusBadRequest)
 				return
 			}
 		}
+
 		// Check hash key <<
 
 		m, ok := serverMetrics[requestMetric.ID]

@@ -190,7 +190,7 @@ func main() {
 				// sendOldUpdate(httpClient, &metric)
 				// new
 				newMetric := metric.CreateNewMetric()
-				newMetric.GenerateHash(AgentSettings.Key)
+				newMetric.Hash = newMetric.GenerateHash(AgentSettings.Key)
 				sendNewUpdate(httpClient, &newMetric)
 			}
 		case <-endTimer.C:

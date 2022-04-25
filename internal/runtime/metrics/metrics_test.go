@@ -3,6 +3,7 @@ package metrics
 import (
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"testing"
 
@@ -125,7 +126,8 @@ func TestGenerateHash(t *testing.T) {
 
 				newMetric.GenerateHash(tt.want.key)
 
-				dst2 := []byte(newMetric.Hash)
+				dst2, err := hex.DecodeString(newMetric.Hash)
+				assert.Nil(t, err)
 				assert.True(t, hmac.Equal(dst, dst2))
 			} else {
 				newMetric.GenerateHash(tt.want.key)

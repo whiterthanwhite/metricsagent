@@ -66,6 +66,10 @@ func main() {
 	if ServerSettings.Key == settings.DefaultHashKey {
 		ServerSettings.Key = *flagHashKey
 	}
+	if ServerSettings.Key != "" {
+		s := settings.ReadKeyFromFileIfExist(ServerSettings.Key)
+		log.Println(s)
+	}
 	log.Println(ServerSettings)
 
 	newServerMetrics := storage.RestoreMetricsFromFile(ServerSettings)

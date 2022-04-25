@@ -3,6 +3,7 @@ package metrics
 import (
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"strconv"
@@ -29,21 +30,22 @@ type Metrics struct {
 	Hash  string     `json:"hash,omitempty"`
 }
 
-func (m *Metrics) GenerateHash(key string) {
+func (m Metrics) GenerateHash(key string) string {
 	if key == "" {
-		return
+		return ""
 	}
 	h := hmac.New(sha256.New, []byte(key))
-	metricHashString := ""
+	stringToHash := ""
 	switch m.MType {
 	case CounterType:
-		metricHashString = fmt.Sprintf("%s:counter:%d", m.ID, *m.Delta)
+		stringToHash = fmt.Sprintf("%s:counter:%d", m.ID, *m.Delta)
 	case GaugeType:
-		metricHashString = fmt.Sprintf("%s:gauge:%f", m.ID, *m.Value)
+		stringToHash = fmt.Sprintf("%s:gauge:%f", m.ID, *m.Value)
 	}
-	h.Write([]byte(metricHashString))
+	h.Write([]byte(stringToHash))
 	dst := h.Sum(nil)
-	m.Hash = string(dst)
+
+	return hex.EncodeToString(dst)
 }
 
 type Metric interface {
