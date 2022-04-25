@@ -223,31 +223,10 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettin
 		}
 		r.Body.Close()
 
-		// Check hash key >>
-		if serverSettings.Key != "" {
-			requestHash, err := hex.DecodeString(requestMetric.Hash)
-			if err != nil {
-				http.Error(rw, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			s := requestMetric.GenerateHash(serverSettings.Key)
-			checkHash, err := hex.DecodeString(s)
-			if err != nil {
-				http.Error(rw, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			if !hmac.Equal(requestHash, checkHash) {
-				http.Error(rw, "", http.StatusBadRequest)
-				return
-			}
-		}
-
-		// Check hash key <<
-
 		m, ok := serverMetrics[requestMetric.ID]
 		if !ok {
 			serverMetrics[requestMetric.ID] = requestMetric
-			log.Println(requestMetric)
+			m = requestMetric
 		} else {
 			switch m.MType {
 			case metrics.CounterType:
@@ -262,6 +241,26 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettin
 			}
 			serverMetrics[requestMetric.ID] = m
 		}
+
+		// Check hash key >>
+		if serverSettings.Key != "" {
+			requestHash, err := hex.DecodeString(requestMetric.Hash)
+			if err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			s := m.GenerateHash(serverSettings.Key)
+			checkHash, err := hex.DecodeString(s)
+			if err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if !hmac.Equal(requestHash, checkHash) {
+				http.Error(rw, "", http.StatusBadRequest)
+				return
+			}
+		}
+		// Check hash key <<
 
 		rw.Header().Set("Content-Type", "application/json")
 		_, err := rw.Write([]byte(`{}`))
@@ -288,7 +287,7 @@ func GetMetricFromServer(serverMetrics map[string]metrics.Metrics, serverSetting
 			return
 		}
 
-		m.GenerateHash(serverSettings.Key)
+		m.Hash = m.GenerateHash(serverSettings.Key)
 		returnMetric, err := json.Marshal(m)
 		if err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)

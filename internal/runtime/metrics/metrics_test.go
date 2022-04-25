@@ -87,16 +87,19 @@ func TestGenerateHash(t *testing.T) {
 	}
 	tests := []struct {
 		name string
+		key  string
 		want want
 	}{
 		{
 			name: "test 1",
+			key:  "/tmp/Aj3e4",
 			want: want{
 				key: "key1",
 			},
 		},
 		{
 			name: "test 2",
+			key:  "/tmp/Aj3e4",
 			want: want{
 				key: "",
 			},
