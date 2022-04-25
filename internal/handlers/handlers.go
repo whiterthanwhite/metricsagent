@@ -188,6 +188,7 @@ func GetAllMetricsFromServer(serverMetrics []metrics.Metrics) http.HandlerFunc {
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
 		}
+
 		metricsBytes, err := json.Marshal(serverMetrics)
 		if err != nil {
 			http.Error(rw, "", http.StatusBadRequest)
@@ -197,10 +198,8 @@ func GetAllMetricsFromServer(serverMetrics []metrics.Metrics) http.HandlerFunc {
 		if err != nil {
 			http.Error(rw, "", http.StatusInternalServerError)
 		}
-		rw.Header().Set("Content-Type", "application/json")
-		if _, err := rw.Write(metricsBytes); err != nil {
-			log.Fatal(err)
-		}
+
+		rw = writeResponseBody(metricsBytes)
 	}
 }
 
@@ -217,11 +216,10 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettin
 		}
 
 		var requestMetric metrics.Metrics
-		if err := json.NewDecoder(r.Body).Decode(&requestMetric); err != nil {
+		if err := getMetricFromRequestBody(&requestMetric, r); err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
 		}
-		r.Body.Close()
 
 		// Check hash key >>
 		if serverSettings.Key != "" {
@@ -262,26 +260,19 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettin
 			serverMetrics[requestMetric.ID] = m
 		}
 
-		rw.Header().Set("Content-Type", "application/json")
-		_, err := rw.Write([]byte(`{}`))
-		if err != nil {
-			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-			return
-		}
+		rw = writeResponseBody([]byte("{}"))
 	}
 }
 
 func GetMetricFromServer(serverMetrics map[string]metrics.Metrics, serverSettings settings.SysSettings) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		var requestMetric metrics.Metrics
-		if err := json.NewDecoder(r.Body).Decode(&requestMetric); err != nil {
+		if err := getMetricFromRequestBody(&requestMetric, r); err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
 		}
-		r.Body.Close()
 
 		m, ok := serverMetrics[requestMetric.ID]
-		log.Println("get", requestMetric, m, ok)
 		if !ok {
 			http.Error(rw, "metric is not found", http.StatusNotFound)
 			return
@@ -307,17 +298,26 @@ func GetMetricFromServer(serverMetrics map[string]metrics.Metrics, serverSetting
 				http.Error(rw, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			_, err = rw.Write(encodedBuffer.Bytes())
-			if err != nil {
-				http.Error(rw, err.Error(), http.StatusInternalServerError)
-				return
-			}
-		} else {
-			_, err = rw.Write(returnMetric)
-			if err != nil {
-				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-				return
-			}
+			returnMetric = encodedBuffer.Bytes()
 		}
+
+		rw = writeResponseBody(returnMetric)
 	}
+}
+
+func writeResponseBody(v []byte) http.ResponseWriter {
+	var rw http.ResponseWriter
+	rw.Header().Set("Content-Type", "application/json")
+	if _, err := rw.Write(v); err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+	}
+	return rw
+}
+
+func getMetricFromRequestBody(m *metrics.Metrics, r *http.Request) error {
+	defer r.Body.Close()
+	if err := json.NewDecoder(r.Body).Decode(m); err != nil {
+		return err
+	}
+	return nil
 }
