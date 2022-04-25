@@ -223,6 +223,26 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettin
 		}
 		r.Body.Close()
 
+		// Check hash key >>
+		if serverSettings.Key != "" {
+			requestHash, err := hex.DecodeString(requestMetric.Hash)
+			if err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			s := requestMetric.GenerateHash(serverSettings.Key)
+			checkHash, err := hex.DecodeString(s)
+			if err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if !hmac.Equal(requestHash, checkHash) {
+				http.Error(rw, "", http.StatusBadRequest)
+				return
+			}
+		}
+		// Check hash key <<
+
 		m, ok := serverMetrics[requestMetric.ID]
 		if !ok {
 			serverMetrics[requestMetric.ID] = requestMetric
@@ -241,26 +261,6 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettin
 			}
 			serverMetrics[requestMetric.ID] = m
 		}
-
-		// Check hash key >>
-		if serverSettings.Key != "" {
-			requestHash, err := hex.DecodeString(requestMetric.Hash)
-			if err != nil {
-				http.Error(rw, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			s := m.GenerateHash(serverSettings.Key)
-			checkHash, err := hex.DecodeString(s)
-			if err != nil {
-				http.Error(rw, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			if !hmac.Equal(requestHash, checkHash) {
-				http.Error(rw, "", http.StatusBadRequest)
-				return
-			}
-		}
-		// Check hash key <<
 
 		rw.Header().Set("Content-Type", "application/json")
 		_, err := rw.Write([]byte(`{}`))
