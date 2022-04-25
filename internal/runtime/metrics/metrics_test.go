@@ -124,13 +124,13 @@ func TestGenerateHash(t *testing.T) {
 				h.Write([]byte(metricHashString))
 				dst := h.Sum(nil)
 
-				newMetric.GenerateHash(tt.want.key)
+				newMetric.Hash = newMetric.GenerateHash(tt.want.key)
 
 				dst2, err := hex.DecodeString(newMetric.Hash)
 				assert.Nil(t, err)
 				assert.True(t, hmac.Equal(dst, dst2))
 			} else {
-				newMetric.GenerateHash(tt.want.key)
+				newMetric.Hash = newMetric.GenerateHash(tt.want.key)
 				assert.Equal(t, tt.want.key, newMetric.Hash)
 			}
 		})

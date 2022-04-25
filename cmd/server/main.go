@@ -62,13 +62,16 @@ func main() {
 	if ServerSettings.StoreFile == settings.DefaultStoreFile {
 		ServerSettings.StoreFile = *flagStoreFile
 	}
-	log.Println(ServerSettings.Key, *flagHashKey)
 	if ServerSettings.Key == settings.DefaultHashKey {
 		ServerSettings.Key = *flagHashKey
 	}
-	if ServerSettings.Key != "" {
-		s := settings.ReadKeyFromFileIfExist(ServerSettings.Key)
-		log.Println(s)
+	if *flagHashKey != "" {
+		s := strings.Split(*flagHashKey, "/")
+		if len(s) > 0 {
+			// s[0] should be empty
+			// s[1] should be "tmp"
+			ServerSettings.Key = s[2]
+		}
 	}
 	log.Println(ServerSettings)
 
