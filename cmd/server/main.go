@@ -42,71 +42,35 @@ func startSaveMetricsOnFile(serverMetrics map[string]metrics.Metrics) {
 	defer saveTicker.Stop()
 	for {
 		<-saveTicker.C
-		saveMetricsOnFile(serverMetrics)
+		storage.SaveMetricsOnFile(serverMetrics, ServerSettings)
 	}
-}
-
-func saveMetricsOnFile(serverMetrics map[string]metrics.Metrics) {
-	if ServerSettings.StoreFile == "" {
-		return
-	}
-	producer, err := storage.NewMetricsWriter(ServerSettings.StoreFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer producer.Close()
-	if err := producer.WriteMetrics(serverMetrics); err != nil {
-		log.Fatal(err)
-	}
-}
-
-func restoreMetricsFromFile() map[string]metrics.Metrics {
-	var serverMetrics map[string]metrics.Metrics = nil
-	if ServerSettings.Restore && ServerSettings.StoreFile != "" {
-		consumer, err := storage.NewMetricsReader(ServerSettings.StoreFile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer consumer.Close()
-		serverMetrics, err = consumer.ReadMetrics()
-		if err != nil {
-			log.Println(err)
-		}
-	}
-	if serverMetrics == nil {
-		serverMetrics = metrics.GetAllNewMetrics()
-	}
-	return serverMetrics
 }
 
 func main() {
 	log.Println("Server start")
 
 	flag.Parse()
-	log.Println(ServerSettings.Address, *flagAddress)
 	if ServerSettings.Address == settings.DefaultAddress {
 		ServerSettings.Address = *flagAddress
 	}
-	log.Println(ServerSettings.Restore, *flagRestore)
 	if ServerSettings.Restore == settings.DefaultRestore {
 		ServerSettings.Restore = ServerSettings.Restore || *flagRestore
 	}
-	log.Println(ServerSettings.StoreInterval, *flagStoreInterval)
 	if ServerSettings.StoreInterval == settings.DefaultStoreInterval {
 		ServerSettings.StoreInterval = *flagStoreInterval
 	}
-	log.Println(ServerSettings.StoreFile, *flagStoreFile)
 	if ServerSettings.StoreFile == settings.DefaultStoreFile {
 		ServerSettings.StoreFile = *flagStoreFile
 	}
+	log.Println(ServerSettings.Key, *flagHashKey)
 	if ServerSettings.Key == settings.DefaultHashKey {
 		ServerSettings.Key = *flagHashKey
 	}
 	log.Println(ServerSettings)
 
-	newServerMetrics := restoreMetricsFromFile()
+	newServerMetrics := storage.RestoreMetricsFromFile(ServerSettings)
 	oldServerMetrics := metrics.GetAllMetrics()
-	defer saveMetricsOnFile(newServerMetrics)
+	defer storage.SaveMetricsOnFile(newServerMetrics, ServerSettings)
 	go startSaveMetricsOnFile(newServerMetrics)
 
 	r := chi.NewRouter()

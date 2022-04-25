@@ -86,9 +86,9 @@ func (gm *GaugeMetric) GetValue() interface{} {
 	return float64(gm.Value)
 }
 
-func (gm GaugeMetric) CreateNewMetric() Metrics {
-	// gm.mu.RLock()
-	// defer gm.mu.RUnlock()
+func (gm *GaugeMetric) CreateNewMetric() Metrics {
+	gm.mu.RLock()
+	defer gm.mu.RUnlock()
 	newM := Metrics{
 		ID:    gm.GetName(),
 		MType: gm.GetTypeName(),
@@ -136,9 +136,9 @@ func (cm *CounterMetric) UpdateValue(v interface{}) {
 	}
 }
 
-func (cm CounterMetric) CreateNewMetric() Metrics {
-	// cm.mu.RLock()
-	// defer cm.mu.RUnlock()
+func (cm *CounterMetric) CreateNewMetric() Metrics {
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
 	newM := Metrics{
 		ID:    cm.GetName(),
 		MType: cm.GetTypeName(),

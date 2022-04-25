@@ -95,7 +95,7 @@ func TestGenerateHash(t *testing.T) {
 			},
 		},
 		{
-			name: "test",
+			name: "test 2",
 			want: want{
 				key: "",
 			},

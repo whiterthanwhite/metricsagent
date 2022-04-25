@@ -229,7 +229,6 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettin
 			h.Write([]byte{})
 			check := h.Sum(nil)
 			if !hmac.Equal(check, []byte(requestMetric.Hash)) {
-				log.Println("Hash error")
 				http.Error(rw, "", http.StatusBadRequest)
 				return
 			}

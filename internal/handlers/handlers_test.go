@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
+	"github.com/whiterthanwhite/metricsagent/internal/settings"
 )
 
 func TestUpdateMetricHandler(t *testing.T) {
@@ -58,6 +59,7 @@ func TestUpdateMetricHandler(t *testing.T) {
 }
 
 func TestUpdateMetricOnServer(t *testing.T) {
+	serverSettings := settings.GetSysSettings()
 	serverMetrics := make(map[string]metrics.Metrics)
 	type send struct {
 		m      metrics.Metrics
@@ -170,7 +172,7 @@ func TestUpdateMetricOnServer(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, "/update/", bytes.NewBuffer(rM))
 			request.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(UpdateMetricOnServer(serverMetrics))
+			h := http.HandlerFunc(UpdateMetricOnServer(serverMetrics, serverSettings))
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			result.Body.Close()
@@ -190,6 +192,7 @@ func TestUpdateMetricOnServer(t *testing.T) {
 }
 
 func TestGetMetricFromServer(t *testing.T) {
+	serverSettings := settings.GetSysSettings()
 	serverMetricDeltas := []int64{
 		0,
 	}
@@ -239,7 +242,7 @@ func TestGetMetricFromServer(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, "/value/", bytes.NewBuffer(rM))
 			request.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(GetMetricFromServer(serverMetrics))
+			h := http.HandlerFunc(GetMetricFromServer(serverMetrics, serverSettings))
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()
