@@ -65,14 +65,6 @@ func main() {
 	if ServerSettings.Key == settings.DefaultHashKey {
 		ServerSettings.Key = *flagHashKey
 	}
-	if *flagHashKey != "" {
-		s := strings.Split(*flagHashKey, "/")
-		if len(s) > 0 {
-			// s[0] should be empty
-			// s[1] should be "tmp"
-			ServerSettings.Key = s[2]
-		}
-	}
 	log.Println(ServerSettings)
 
 	newServerMetrics := storage.RestoreMetricsFromFile(ServerSettings)

@@ -2,7 +2,6 @@ package settings
 
 import (
 	"log"
-	"os"
 	"time"
 
 	"github.com/caarlos0/env"
@@ -35,20 +34,4 @@ func GetSysSettings() SysSettings {
 	}
 
 	return sysSettings
-}
-
-func ReadKeyFromFileIfExist(filePath string) string {
-	file, err := os.OpenFile(filePath, os.O_RDONLY, 0777)
-	if err != nil {
-		log.Println(err.Error())
-		return ""
-	}
-	defer file.Close()
-
-	keyByte := make([]byte, 0)
-	if _, err := file.Read(keyByte); err != nil {
-		log.Println(err.Error())
-	}
-
-	return string(keyByte)
 }

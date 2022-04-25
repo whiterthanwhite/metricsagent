@@ -2,6 +2,6 @@ package settings
 
 import "testing"
 
-func TestReadKeyFromFileIfExist(t *testing.T) {
+func TestGetSysSettings(t *testing.T) {
 
 }
