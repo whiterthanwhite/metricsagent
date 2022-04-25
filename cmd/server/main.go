@@ -22,6 +22,7 @@ var (
 	flagRestore       *bool
 	flagStoreInterval *time.Duration
 	flagStoreFile     *string
+	flagHashKey       *string
 )
 
 func init() {
@@ -29,6 +30,7 @@ func init() {
 	flagRestore = flag.Bool("r", settings.DefaultRestore, "")
 	flagStoreInterval = flag.Duration("i", settings.DefaultStoreInterval, "")
 	flagStoreFile = flag.String("f", settings.DefaultStoreFile, "")
+	flagHashKey = flag.String("k", settings.DefaultHashKey, "")
 }
 
 func startSaveMetricsOnFile(serverMetrics map[string]metrics.Metrics) {
@@ -97,6 +99,9 @@ func main() {
 	if ServerSettings.StoreFile == settings.DefaultStoreFile {
 		ServerSettings.StoreFile = *flagStoreFile
 	}
+	if ServerSettings.Key == settings.DefaultHashKey {
+		ServerSettings.Key = *flagHashKey
+	}
 	log.Println(ServerSettings)
 
 	newServerMetrics := restoreMetricsFromFile()
@@ -106,15 +111,16 @@ func main() {
 
 	r := chi.NewRouter()
 
+	// TODO: Add middleware
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlers.GetAllMetricsFromFile(oldServerMetrics, newServerMetrics))
 		r.Route("/update", func(r chi.Router) {
-			r.Post("/", handlers.UpdateMetricOnServer(newServerMetrics))
+			r.Post("/", handlers.UpdateMetricOnServer(newServerMetrics, ServerSettings))
 			r.Post("/{metricType}/{metricName}/{metricValue}",
 				handlers.UpdateMetricHandler(oldServerMetrics, newServerMetrics))
 		})
 		r.Route("/value", func(r chi.Router) {
-			r.Post("/", handlers.GetMetricFromServer(newServerMetrics))
+			r.Post("/", handlers.GetMetricFromServer(newServerMetrics, ServerSettings))
 			r.Get("/{metricType}/{metricName}",
 				handlers.GetMetricValueFromServer(oldServerMetrics))
 		})

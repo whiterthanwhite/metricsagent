@@ -24,12 +24,14 @@ var (
 	flagAddress        *string
 	flagReportInterval *time.Duration
 	flagPollInterval   *time.Duration
+	flagHashKey        *string
 )
 
 func init() {
 	flagAddress = flag.String("a", settings.DefaultAddress, "")
 	flagReportInterval = flag.Duration("r", settings.DefaultReportInterval, "")
 	flagPollInterval = flag.Duration("p", settings.DefaultPollInterval, "")
+	flagHashKey = flag.String("k", settings.DefaultHashKey, "")
 }
 
 func sendNewUpdate(agentClient *http.Client, m *metrics.Metrics) {
@@ -101,22 +103,6 @@ func getMetricURLString(m metrics.Metric) string {
 	return stringURL
 }
 
-func createNewNetric(oldM metrics.Metric) metrics.Metrics {
-	newM := metrics.Metrics{
-		ID:    oldM.GetName(),
-		MType: oldM.GetTypeName(),
-	}
-
-	switch v := oldM.GetValue().(type) {
-	case int64:
-		newM.Delta = &v
-	case float64:
-		newM.Value = &v
-	}
-
-	return newM
-}
-
 func setUpHTTPClient(agentClient *http.Client) {
 	agentClient.Timeout = 0 * time.Second
 }
@@ -161,6 +147,9 @@ func main() {
 	if AgentSettings.ReportInterval == settings.DefaultReportInterval {
 		AgentSettings.ReportInterval = *flagReportInterval
 	}
+	if AgentSettings.Key == settings.DefaultHashKey {
+		AgentSettings.Key = *flagHashKey
+	}
 	log.Println(AgentSettings)
 
 	go enableTerminationSignals()
@@ -200,7 +189,8 @@ func main() {
 				// old
 				// sendOldUpdate(httpClient, &metric)
 				// new
-				newMetric := createNewNetric(metric)
+				newMetric := metric.CreateNewMetric()
+				newMetric.GenerateHash(AgentSettings.Key)
 				sendNewUpdate(httpClient, &newMetric)
 			}
 		case <-endTimer.C:

@@ -14,6 +14,7 @@ const (
 	DefaultStoreInterval  time.Duration = 300 * time.Second
 	DefaultStoreFile      string        = "/tmp/devops-metrics-db.json"
 	DefaultRestore        bool          = true
+	DefaultHashKey        string        = ""
 )
 
 type SysSettings struct {
@@ -23,6 +24,7 @@ type SysSettings struct {
 	StoreInterval  time.Duration `env:"STORE_INTERVAL" envDefault:"300s"`
 	StoreFile      string        `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
 	Restore        bool          `env:"RESTORE" envDefault:"true"`
+	Key            string        `env:"KEY" envDefault:""`
 }
 
 func GetSysSettings() SysSettings {

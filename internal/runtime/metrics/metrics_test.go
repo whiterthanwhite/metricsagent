@@ -1,6 +1,9 @@
 package metrics
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -73,6 +76,61 @@ func TestGetMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.expectedMetric, GetMetric(tt.mName, tt.mType))
+		})
+	}
+}
+
+func TestGenerateHash(t *testing.T) {
+	type want struct {
+		key string
+	}
+	tests := []struct {
+		name string
+		want want
+	}{
+		{
+			name: "test 1",
+			want: want{
+				key: "key1",
+			},
+		},
+		{
+			name: "test",
+			want: want{
+				key: "",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			value := 134.12345
+			newMetric := Metrics{
+				ID:    "Alloc",
+				MType: GaugeType,
+				Value: &value,
+			}
+
+			if tt.want.key != "" {
+				h := hmac.New(sha256.New, []byte(tt.want.key))
+				metricHashString := ""
+				switch newMetric.MType {
+				case CounterType:
+					metricHashString = fmt.Sprintf("%s:counter:%d", newMetric.ID, *newMetric.Delta)
+				case GaugeType:
+					metricHashString = fmt.Sprintf("%s:gauge:%f", newMetric.ID, *newMetric.Value)
+				}
+				h.Write([]byte(metricHashString))
+				dst := h.Sum(nil)
+
+				newMetric.GenerateHash(tt.want.key)
+
+				dst2 := []byte(newMetric.Hash)
+				assert.True(t, hmac.Equal(dst, dst2))
+			} else {
+				newMetric.GenerateHash(tt.want.key)
+				assert.Equal(t, tt.want.key, newMetric.Hash)
+			}
 		})
 	}
 }

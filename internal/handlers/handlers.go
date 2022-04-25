@@ -3,6 +3,8 @@ package handlers
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -13,6 +15,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
+	"github.com/whiterthanwhite/metricsagent/internal/settings"
 )
 
 func UpdateMetricHandler(addedMetrics map[string]metrics.Metric, newMetrics map[string]metrics.Metrics) http.HandlerFunc {
@@ -201,7 +204,7 @@ func GetAllMetricsFromServer(serverMetrics []metrics.Metrics) http.HandlerFunc {
 	}
 }
 
-func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.HandlerFunc {
+func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettings settings.SysSettings) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
@@ -219,6 +222,19 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 			return
 		}
 		r.Body.Close()
+
+		// Check hash key >>
+		if serverSettings.Key != "" {
+			h := hmac.New(sha256.New, []byte(serverSettings.Key))
+			h.Write([]byte{})
+			check := h.Sum(nil)
+			if !hmac.Equal(check, []byte(requestMetric.Hash)) {
+				log.Println("Hash error")
+				http.Error(rw, "", http.StatusBadRequest)
+				return
+			}
+		}
+		// Check hash key <<
 
 		m, ok := serverMetrics[requestMetric.ID]
 		if !ok {
@@ -248,7 +264,7 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 	}
 }
 
-func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerFunc {
+func GetMetricFromServer(serverMetrics map[string]metrics.Metrics, serverSettings settings.SysSettings) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		var requestMetric metrics.Metrics
 		if err := json.NewDecoder(r.Body).Decode(&requestMetric); err != nil {
@@ -264,6 +280,7 @@ func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerF
 			return
 		}
 
+		m.GenerateHash(serverSettings.Key)
 		returnMetric, err := json.Marshal(m)
 		if err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
