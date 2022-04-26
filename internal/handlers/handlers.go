@@ -260,7 +260,7 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettin
 			serverMetrics[requestMetric.ID] = m
 		}
 
-		rw = writeResponseBody([]byte("{}"), rw)
+		writeResponseBody([]byte("{}"), rw)
 	}
 }
 
@@ -305,12 +305,11 @@ func GetMetricFromServer(serverMetrics map[string]metrics.Metrics, serverSetting
 	}
 }
 
-func writeResponseBody(v []byte, rw http.ResponseWriter) http.ResponseWriter {
+func writeResponseBody(v []byte, rw http.ResponseWriter) {
 	rw.Header().Set("Content-Type", "application/json")
 	if _, err := rw.Write(v); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 	}
-	return rw
 }
 
 func getMetricFromRequestBody(m *metrics.Metrics, r *http.Request) error {
