@@ -35,3 +35,7 @@ func (mdb *Metricdb) Ping() error {
 func (mdb *Metricdb) DBClose() {
 	mdb.conn.Close(mdb.ctx)
 }
+
+func (mdb *Metricdb) IsConnActive() bool {
+	return mdb.conn != nil
+}

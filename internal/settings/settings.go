@@ -15,7 +15,7 @@ const (
 	DefaultStoreFile      string        = "/tmp/devops-metrics-db.json"
 	DefaultRestore        bool          = true
 	DefaultHashKey        string        = ""
-	DefaultDBAddress      string        = ""
+	DefaultDBAddress      string        = "-"
 )
 
 type SysSettings struct {
@@ -26,11 +26,13 @@ type SysSettings struct {
 	StoreFile      string        `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
 	Restore        bool          `env:"RESTORE" envDefault:"true"`
 	Key            string        `env:"KEY" envDefault:""`
-	MetricDBAdress string        `enc:"DATABASE_DSN" envDefault:""`
+	MetricDBAdress string        `enc:"DATABASE_DSN"`
 }
 
 func GetSysSettings() SysSettings {
-	sysSettings := SysSettings{}
+	sysSettings := SysSettings{
+		MetricDBAdress: DefaultDBAddress,
+	}
 	if err := env.Parse(&sysSettings); err != nil {
 		log.Fatal(err)
 	}
