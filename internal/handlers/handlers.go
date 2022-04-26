@@ -14,6 +14,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/whiterthanwhite/metricsagent/internal/metricdb"
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
 	"github.com/whiterthanwhite/metricsagent/internal/settings"
 )
@@ -318,4 +319,14 @@ func getMetricFromRequestBody(m *metrics.Metrics, r *http.Request) error {
 		return err
 	}
 	return nil
+}
+
+func CheckDatabaseConn(conn metricdb.Metricdb) http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		if err := conn.Ping(); err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		rw.WriteHeader(http.StatusOK)
+	}
 }

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -12,6 +13,7 @@ import (
 	// "github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/whiterthanwhite/metricsagent/internal/metricdb"
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
 	"github.com/whiterthanwhite/metricsagent/internal/settings"
 )
@@ -265,6 +267,39 @@ func TestGetMetricFromServer(t *testing.T) {
 			}
 
 			assert.Equal(t, string(expectedMetricJSON), string(rBody))
+		})
+	}
+}
+
+func TestCheckDatabaseConn(t *testing.T) {
+	mdb := metricdb.CreateDBConnnect(context.Background(), "postgres://localhost:5432/metricsagentdb")
+	defer mdb.DBClose()
+
+	type want struct {
+		code int
+	}
+
+	tests := []struct {
+		name string
+		want want
+	}{
+		{
+			name: "test 1",
+			want: want{
+				code: 200,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, "/ping", nil)
+			w := httptest.NewRecorder()
+			h := http.HandlerFunc(CheckDatabaseConn(mdb))
+			h.ServeHTTP(w, r)
+			result := w.Result()
+
+			assert.Equal(t, tt.want.code, result.StatusCode)
 		})
 	}
 }

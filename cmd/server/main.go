@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/whiterthanwhite/metricsagent/internal/handlers"
+	"github.com/whiterthanwhite/metricsagent/internal/metricdb"
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
 	"github.com/whiterthanwhite/metricsagent/internal/settings"
 	"github.com/whiterthanwhite/metricsagent/internal/storage"
@@ -23,6 +25,7 @@ var (
 	flagStoreInterval *time.Duration
 	flagStoreFile     *string
 	flagHashKey       *string
+	flagDBAddress     *string
 )
 
 func init() {
@@ -31,6 +34,7 @@ func init() {
 	flagStoreInterval = flag.Duration("i", settings.DefaultStoreInterval, "")
 	flagStoreFile = flag.String("f", settings.DefaultStoreFile, "")
 	flagHashKey = flag.String("k", settings.DefaultHashKey, "")
+	flagDBAddress = flag.String("d", settings.DefaultHashKey, "")
 }
 
 func startSaveMetricsOnFile(serverMetrics map[string]metrics.Metrics) {
@@ -65,12 +69,19 @@ func main() {
 	if ServerSettings.Key == settings.DefaultHashKey {
 		ServerSettings.Key = *flagHashKey
 	}
+	if ServerSettings.MetricDBAdress == settings.DefaultDBAddress {
+		ServerSettings.MetricDBAdress = *flagDBAddress
+	}
 	log.Println(ServerSettings)
 
 	newServerMetrics := storage.RestoreMetricsFromFile(ServerSettings)
 	oldServerMetrics := metrics.GetAllMetrics()
 	defer storage.SaveMetricsOnFile(newServerMetrics, ServerSettings)
 	go startSaveMetricsOnFile(newServerMetrics)
+
+	// postgresURLString := "postgres://localhost:5432/metricsagentdb"
+	mdb := metricdb.CreateDBConnnect(context.Background(), ServerSettings.MetricDBAdress)
+	defer mdb.DBClose()
 
 	r := chi.NewRouter()
 
@@ -86,6 +97,9 @@ func main() {
 			r.Post("/", handlers.GetMetricFromServer(newServerMetrics, ServerSettings))
 			r.Get("/{metricType}/{metricName}",
 				handlers.GetMetricValueFromServer(oldServerMetrics))
+		})
+		r.Route("/ping", func(r chi.Router) {
+			r.Get("/", handlers.CheckDatabaseConn(mdb))
 		})
 		// r.Post("/", handlers.GetAllMetricsFromServer(serverMetrics))
 	})
