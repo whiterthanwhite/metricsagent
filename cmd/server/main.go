@@ -69,6 +69,7 @@ func main() {
 	if ServerSettings.Key == settings.DefaultHashKey {
 		ServerSettings.Key = *flagHashKey
 	}
+	log.Println(ServerSettings.MetricDBAdress, *flagDBAddress)
 	if ServerSettings.MetricDBAdress == settings.DefaultDBAddress {
 		ServerSettings.MetricDBAdress = *flagDBAddress
 	}
