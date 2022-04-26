@@ -2,8 +2,7 @@ package metricdb
 
 import (
 	"context"
-	"fmt"
-	"os"
+	"log"
 
 	"github.com/jackc/pgx/v4"
 )
@@ -21,8 +20,7 @@ func CreateDBConnnect(ctx context.Context, connStr string) Metricdb {
 
 	mdb.conn, err = pgx.Connect(mdb.ctx, connStr)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
+		log.Printf("Unable to connect to database: %v\n", err)
 	}
 	return mdb
 }

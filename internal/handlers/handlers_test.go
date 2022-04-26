@@ -298,6 +298,7 @@ func TestCheckDatabaseConn(t *testing.T) {
 			h := http.HandlerFunc(CheckDatabaseConn(mdb))
 			h.ServeHTTP(w, r)
 			result := w.Result()
+			result.Body.Close()
 
 			assert.Equal(t, tt.want.code, result.StatusCode)
 		})
