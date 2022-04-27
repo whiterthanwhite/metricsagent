@@ -272,7 +272,7 @@ func TestGetMetricFromServer(t *testing.T) {
 }
 
 func TestCheckDatabaseConn(t *testing.T) {
-	mdb := metricdb.CreateDBConnnect(context.Background(), "postgres://localhost:5432/metricsagentdb")
+	mdb := metricdb.CreateDBConnnect(context.Background(), "")
 	if !mdb.IsConnActive() {
 		return
 	}

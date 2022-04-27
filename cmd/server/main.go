@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -35,7 +34,7 @@ func init() {
 	flagStoreInterval = flag.Duration("i", settings.DefaultStoreInterval, "")
 	flagStoreFile = flag.String("f", settings.DefaultStoreFile, "")
 	flagHashKey = flag.String("k", settings.DefaultHashKey, "")
-	flagDBAddress = flag.String("d", "-", "")
+	flagDBAddress = flag.String("d", settings.DefaultDBAddress, "")
 }
 
 func startSaveMetricsOnFile(serverMetrics map[string]metrics.Metrics) {
@@ -53,11 +52,6 @@ func startSaveMetricsOnFile(serverMetrics map[string]metrics.Metrics) {
 
 func main() {
 	log.Println("Server start")
-
-	testEnvVars := os.Environ()
-	for i, testEnvVar := range testEnvVars {
-		log.Println(i, testEnvVar)
-	}
 
 	flag.Parse()
 	if ServerSettings.Address == settings.DefaultAddress {
@@ -85,7 +79,6 @@ func main() {
 	defer storage.SaveMetricsOnFile(newServerMetrics, ServerSettings)
 	go startSaveMetricsOnFile(newServerMetrics)
 
-	// postgresURLString := "postgres://localhost:5432/metricsagentdb"
 	mdb := metricdb.CreateDBConnnect(context.Background(), ServerSettings.MetricDBAdress)
 	defer mdb.DBClose()
 
