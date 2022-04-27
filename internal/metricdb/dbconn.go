@@ -8,7 +8,7 @@ import (
 )
 
 type Metricdb struct {
-	conn *pgx.Conn
+	Conn *pgx.Conn
 	ctx  context.Context
 }
 
@@ -18,24 +18,28 @@ func CreateDBConnnect(ctx context.Context, connStr string) Metricdb {
 	}
 	var err error
 
-	mdb.conn, err = pgx.Connect(mdb.ctx, connStr)
+	mdb.Conn, err = pgx.Connect(mdb.ctx, connStr)
 	if err != nil {
 		log.Printf("Unable to connect to database: %v\n", err)
 	}
 	return mdb
 }
 
+func (mdb *Metricdb) GetDBContext() context.Context {
+	return mdb.ctx
+}
+
 func (mdb *Metricdb) Ping() error {
-	if err := mdb.conn.Ping(mdb.ctx); err != nil {
+	if err := mdb.Conn.Ping(mdb.ctx); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (mdb *Metricdb) DBClose() {
-	mdb.conn.Close(mdb.ctx)
+	mdb.Conn.Close(mdb.ctx)
 }
 
 func (mdb *Metricdb) IsConnActive() bool {
-	return mdb.conn != nil
+	return mdb.Conn != nil
 }

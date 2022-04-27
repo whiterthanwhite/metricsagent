@@ -50,6 +50,34 @@ func startSaveMetricsOnFile(serverMetrics map[string]metrics.Metrics) {
 	}
 }
 
+func createMetricTable(mdb metricdb.Metricdb) {
+	if !mdb.IsConnActive() {
+		return
+	}
+
+	var tableExists bool
+
+	ctx, cancel := context.WithTimeout(mdb.GetDBContext(), 5*time.Second)
+
+	row := mdb.Conn.QueryRow(ctx, `select exists (select from information_schema.tables where table_name = 'metrics');`)
+	cancel()
+	if err := row.Scan(&tableExists); err != nil {
+		log.Println(err.Error())
+		return
+	}
+
+	if tableExists {
+		return
+	}
+
+	ctx, cancel = context.WithTimeout(mdb.GetDBContext(), 5*time.Second)
+
+	row = mdb.Conn.QueryRow(ctx, "CREATE TABLE metrics (id varchar(50), type varchar(50), delta int, value double precision);")
+	cancel()
+
+	log.Println("table created")
+}
+
 func main() {
 	log.Println("Server start")
 
@@ -81,6 +109,8 @@ func main() {
 
 	mdb := metricdb.CreateDBConnnect(context.Background(), ServerSettings.MetricDBAdress)
 	defer mdb.DBClose()
+
+	createMetricTable(mdb)
 
 	r := chi.NewRouter()
 
