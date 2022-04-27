@@ -54,13 +54,6 @@ func main() {
 	log.Println("Server start")
 
 	flag.Parse()
-	log.Printf("%v %v %v %v %v %v",
-		*flagAddress,
-		*flagRestore,
-		*flagStoreInterval,
-		*flagStoreFile,
-		*flagHashKey,
-		*flagDBAddress)
 	if ServerSettings.Address == settings.DefaultAddress {
 		ServerSettings.Address = *flagAddress
 	}
@@ -76,9 +69,11 @@ func main() {
 	if ServerSettings.Key == settings.DefaultHashKey {
 		ServerSettings.Key = *flagHashKey
 	}
-	if ServerSettings.MetricDBAdress == settings.DefaultDBAddress {
-		ServerSettings.MetricDBAdress = *flagDBAddress
-	}
+	/*
+		if ServerSettings.MetricDBAdress == settings.DefaultDBAddress {
+			ServerSettings.MetricDBAdress = *flagDBAddress
+		}
+	*/
 	log.Println(ServerSettings)
 
 	newServerMetrics := storage.RestoreMetricsFromFile(ServerSettings)

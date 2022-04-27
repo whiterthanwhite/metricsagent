@@ -323,7 +323,6 @@ func getMetricFromRequestBody(m *metrics.Metrics, r *http.Request) error {
 
 func CheckDatabaseConn(conn metricdb.Metricdb) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		log.Println("CheckDatabaseConn")
 		if !conn.IsConnActive() {
 			http.Error(rw, "", http.StatusInternalServerError)
 			return
