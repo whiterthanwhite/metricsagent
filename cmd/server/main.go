@@ -72,7 +72,7 @@ func createMetricTable(mdb metricdb.Metricdb) {
 
 	ctx, cancel = context.WithTimeout(mdb.GetDBContext(), 5*time.Second)
 
-	row = mdb.Conn.QueryRow(ctx, "CREATE TABLE metrics (id varchar(50), type varchar(50), delta int, value double precision);")
+	_ = mdb.Conn.QueryRow(ctx, "CREATE TABLE metrics (id varchar(50) not null, type varchar(50) not null, delta int, value double precision);")
 	cancel()
 
 	log.Println("table created")
@@ -109,7 +109,6 @@ func main() {
 
 	mdb := metricdb.CreateDBConnnect(context.Background(), ServerSettings.MetricDBAdress)
 	defer mdb.DBClose()
-
 	createMetricTable(mdb)
 
 	r := chi.NewRouter()
@@ -118,7 +117,7 @@ func main() {
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlers.GetAllMetricsFromFile(oldServerMetrics, newServerMetrics))
 		r.Route("/update", func(r chi.Router) {
-			r.Post("/", handlers.UpdateMetricOnServer(newServerMetrics, ServerSettings))
+			r.Post("/", handlers.UpdateMetricOnServer(newServerMetrics, ServerSettings, mdb))
 			r.Post("/{metricType}/{metricName}/{metricValue}",
 				handlers.UpdateMetricHandler(oldServerMetrics, newServerMetrics))
 		})

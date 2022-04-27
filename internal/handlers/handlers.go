@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"crypto/hmac"
 	"encoding/hex"
 	"encoding/json"
@@ -11,6 +12,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -204,7 +206,7 @@ func GetAllMetricsFromServer(serverMetrics []metrics.Metrics) http.HandlerFunc {
 	}
 }
 
-func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettings settings.SysSettings) http.HandlerFunc {
+func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettings settings.SysSettings, mdb metricdb.Metricdb) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
@@ -259,6 +261,17 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettin
 				m.Value = requestMetric.Value
 			}
 			serverMetrics[requestMetric.ID] = m
+		}
+
+		if mdb.IsConnActive() {
+			connCtx, cancel := context.WithTimeout(mdb.GetDBContext(), 5*time.Second)
+			switch m.MType {
+			case metrics.CounterType:
+				_ = mdb.Conn.QueryRow(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, *m.Delta, nil)
+			case metrics.GaugeType:
+				_ = mdb.Conn.QueryRow(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, nil, *m.Value)
+			}
+			cancel()
 		}
 
 		writeResponseBody([]byte("{}"), rw)
