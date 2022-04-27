@@ -34,7 +34,7 @@ func init() {
 	flagStoreInterval = flag.Duration("i", settings.DefaultStoreInterval, "")
 	flagStoreFile = flag.String("f", settings.DefaultStoreFile, "")
 	flagHashKey = flag.String("k", settings.DefaultHashKey, "")
-	flagDBAddress = flag.String("d", settings.DefaultHashKey, "")
+	flagDBAddress = flag.String("d", "-", "")
 }
 
 func startSaveMetricsOnFile(serverMetrics map[string]metrics.Metrics) {
@@ -54,6 +54,13 @@ func main() {
 	log.Println("Server start")
 
 	flag.Parse()
+	log.Printf("%v %v %v %v %v %v",
+		*flagAddress,
+		*flagRestore,
+		*flagStoreInterval,
+		*flagStoreFile,
+		*flagHashKey,
+		*flagDBAddress)
 	if ServerSettings.Address == settings.DefaultAddress {
 		ServerSettings.Address = *flagAddress
 	}
@@ -69,7 +76,6 @@ func main() {
 	if ServerSettings.Key == settings.DefaultHashKey {
 		ServerSettings.Key = *flagHashKey
 	}
-	log.Println(ServerSettings.MetricDBAdress, *flagDBAddress)
 	if ServerSettings.MetricDBAdress == settings.DefaultDBAddress {
 		ServerSettings.MetricDBAdress = *flagDBAddress
 	}
