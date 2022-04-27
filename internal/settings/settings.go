@@ -26,7 +26,7 @@ type SysSettings struct {
 	StoreFile      string        `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
 	Restore        bool          `env:"RESTORE" envDefault:"true"`
 	Key            string        `env:"KEY" envDefault:""`
-	MetricDBAdress string        `enc:"DATABASE_DSN"`
+	MetricDBAdress string        `env:"DATABASE_DSN"`
 }
 
 func GetSysSettings() SysSettings {
