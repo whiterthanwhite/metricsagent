@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -52,6 +53,11 @@ func startSaveMetricsOnFile(serverMetrics map[string]metrics.Metrics) {
 
 func main() {
 	log.Println("Server start")
+
+	testEnvVars := os.Environ()
+	for i, testEnvVar := range testEnvVars {
+		log.Println(i, testEnvVar)
+	}
 
 	flag.Parse()
 	if ServerSettings.Address == settings.DefaultAddress {
