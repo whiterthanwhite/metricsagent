@@ -54,9 +54,6 @@ func main() {
 	log.Println("Server start")
 
 	flag.Parse()
-	log.Printf("DBAddress: %v\nFlagDB: %v\nFilePath%v\nFlagFilePath: %v", ServerSettings.MetricDBAdress,
-		*flagDBAddress, ServerSettings.StoreFile, *flagStoreFile)
-
 	if ServerSettings.Address == settings.DefaultAddress {
 		ServerSettings.Address = *flagAddress
 	}
