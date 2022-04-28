@@ -34,6 +34,41 @@ func init() {
 	flagHashKey = flag.String("k", settings.DefaultHashKey, "")
 }
 
+func sendMetricsToServer(agentClient *http.Client, ms []metrics.Metrics) {
+	msJSON, err := json.Marshal(ms)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+
+	urlString := fmt.Sprintf("http://%s/updates/", AgentSettings.Address)
+	requestBodyBuff := bytes.NewBuffer(msJSON)
+	request, err := http.NewRequest(http.MethodPost, urlString, requestBodyBuff)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+
+	request.Close = true
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Content-Length", fmt.Sprint(requestBodyBuff.Len()))
+
+	response, err := agentClient.Do(request)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+	defer response.Body.Close()
+
+	responseBody, err := io.ReadAll(response.Body)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+
+	log.Println("Response body: ", string(responseBody))
+}
+
 func sendNewUpdate(agentClient *http.Client, m *metrics.Metrics) {
 	bNewM, err := json.Marshal(*m)
 	if err != nil {
@@ -185,14 +220,15 @@ func main() {
 			addedMetrics["PollCount"] = pollCount
 		case <-reportTicker.C:
 			log.Println("Send Metrics To Server")
+			ms := make([]metrics.Metrics, 0)
 			for _, metric := range addedMetrics {
-				// old
 				// sendOldUpdate(httpClient, &metric)
-				// new
 				newMetric := metric.CreateNewMetric()
 				newMetric.Hash = newMetric.GenerateHash(AgentSettings.Key)
-				sendNewUpdate(httpClient, &newMetric)
+				// sendNewUpdate(httpClient, &newMetric)
+				ms = append(ms, newMetric)
 			}
+			sendMetricsToServer(httpClient, ms)
 		case <-endTimer.C:
 			os.Exit(0)
 		}

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v4"
 
 	"github.com/whiterthanwhite/metricsagent/internal/metricdb"
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
@@ -275,6 +276,104 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettin
 		}
 
 		writeResponseBody([]byte("{}"), rw)
+	}
+}
+
+func UpdateMetricsOnServer(serverMetrics map[string]metrics.Metrics, serverSettings settings.SysSettings, mdb metricdb.Metricdb) http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Content-Type") != "application/json" {
+			http.Error(rw, "", http.StatusBadRequest)
+			return
+		}
+
+		if r.ContentLength == 0 {
+			http.Error(rw, "", http.StatusBadRequest)
+			return
+		}
+
+		var requestedMetrics []metrics.Metrics
+		if err := json.NewDecoder(r.Body).Decode(&requestedMetrics); err != nil {
+			http.Error(rw, "", http.StatusInternalServerError)
+			return
+		}
+		r.Body.Close()
+
+		var tx pgx.Tx
+		if mdb.IsConnActive() {
+			var err error
+			ctx, cancel := context.WithCancel(mdb.GetDBContext())
+			defer cancel()
+			tx, err = mdb.Conn.Begin(ctx)
+			if err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		for _, requestedMetric := range requestedMetrics {
+			// Check hash key >>
+			if serverSettings.Key != "" {
+				requestHash, err := hex.DecodeString(requestedMetric.Hash)
+				if err != nil {
+					http.Error(rw, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				s := requestedMetric.GenerateHash(serverSettings.Key)
+				checkHash, err := hex.DecodeString(s)
+				if err != nil {
+					http.Error(rw, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if !hmac.Equal(requestHash, checkHash) {
+					http.Error(rw, "", http.StatusBadRequest)
+					return
+				}
+			}
+			// Check hash key <<
+
+			m, ok := serverMetrics[requestedMetric.ID]
+			if !ok {
+				serverMetrics[requestedMetric.ID] = requestedMetric
+				m = requestedMetric
+			} else {
+				switch m.MType {
+				case metrics.CounterType:
+					var tempDelta int64 = 0
+					if m.Delta != nil {
+						tempDelta = *m.Delta
+					}
+					tempDelta += *requestedMetric.Delta
+					m.Delta = &tempDelta
+				case metrics.GaugeType:
+					m.Value = requestedMetric.Value
+				}
+				serverMetrics[requestedMetric.ID] = m
+			}
+
+			if mdb.IsConnActive() {
+				connCtx, connCancel := context.WithTimeout(mdb.GetDBContext(), 5*time.Second)
+				switch m.MType {
+				case metrics.CounterType:
+					if _, err := tx.Exec(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, *m.Delta, nil); err != nil {
+						log.Println(err.Error())
+					}
+					log.Printf("insert metric %v of type %v with value %v", m.ID, m.MType, *m.Delta)
+				case metrics.GaugeType:
+					if _, err := tx.Exec(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, nil, *m.Value); err != nil {
+						log.Println(err.Error())
+					}
+					log.Printf("insert metric %v of type %v with value %v", m.ID, m.MType, *m.Value)
+				}
+				connCancel()
+			}
+		}
+
+		if err := tx.Commit(mdb.GetDBContext()); err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		rw.WriteHeader(http.StatusOK)
 	}
 }
 

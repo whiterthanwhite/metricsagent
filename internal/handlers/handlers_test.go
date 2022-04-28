@@ -115,6 +115,73 @@ func TestUpdateMetricOnServer(t *testing.T) {
 	}
 }
 
+func TestUpdateMetricsOnServer(t *testing.T) {
+	serverSettings := settings.GetSysSettings()
+	mdb := metricdb.CreateDBConnnect(context.Background(), serverSettings.MetricDBAdress)
+	if !mdb.IsConnActive() {
+		return
+	}
+	defer mdb.DBClose()
+
+	serverMetrics := make(map[string]metrics.Metrics)
+
+	type want struct {
+		statusCode int
+	}
+	tests := []struct {
+		name string
+		want want
+	}{
+		{
+			name: "test 1",
+			want: want{
+				statusCode: 200,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var v int64 = 4
+			ms := []metrics.Metrics{
+				{
+					ID:    "Metric 1",
+					MType: metrics.CounterType,
+					Delta: &v,
+				},
+				{
+					ID:    "Metric 2",
+					MType: metrics.CounterType,
+					Delta: &v,
+				},
+				{
+					ID:    "Metric 3",
+					MType: metrics.CounterType,
+					Delta: &v,
+				},
+			}
+
+			mb, err := json.Marshal(ms)
+			assert.Nil(t, err)
+
+			buff := bytes.NewBuffer(mb)
+			request := httptest.NewRequest(http.MethodPost, "/update", buff)
+			request.Header.Set("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+			h := http.HandlerFunc(UpdateMetricsOnServer(serverMetrics, serverSettings, mdb))
+			h.ServeHTTP(w, request)
+			result := w.Result()
+			defer result.Body.Close()
+
+			responseBody, err := io.ReadAll(result.Body)
+			assert.Nil(t, err)
+			log.Println("Response body: ", string(responseBody))
+
+			assert.Equal(t, tt.want.statusCode, result.StatusCode)
+		})
+	}
+}
+
 func TestGetMetricFromServer(t *testing.T) {
 	serverSettings := settings.GetSysSettings()
 	serverMetricDeltas := []int64{

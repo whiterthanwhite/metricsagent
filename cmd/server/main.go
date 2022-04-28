@@ -121,6 +121,9 @@ func main() {
 			r.Post("/{metricType}/{metricName}/{metricValue}",
 				handlers.UpdateMetricHandler(oldServerMetrics, newServerMetrics))
 		})
+		r.Route("/updates", func(r chi.Router) {
+			r.Post("/", handlers.UpdateMetricsOnServer(newServerMetrics, ServerSettings, mdb))
+		})
 		r.Route("/value", func(r chi.Router) {
 			r.Post("/", handlers.GetMetricFromServer(newServerMetrics, ServerSettings))
 			r.Get("/{metricType}/{metricName}",
