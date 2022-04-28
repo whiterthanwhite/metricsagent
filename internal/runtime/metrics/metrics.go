@@ -1,6 +1,10 @@
 package metrics
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -23,6 +27,25 @@ type Metrics struct {
 	MType metrictype `json:"type"`
 	Delta *int64     `json:"delta,omitempty"`
 	Value *float64   `json:"value,omitempty"`
+	Hash  string     `json:"hash,omitempty"`
+}
+
+func (m Metrics) GenerateHash(key string) string {
+	if key == "" {
+		return ""
+	}
+	h := hmac.New(sha256.New, []byte(key))
+	stringToHash := ""
+	switch m.MType {
+	case CounterType:
+		stringToHash = fmt.Sprintf("%s:counter:%d", m.ID, *m.Delta)
+	case GaugeType:
+		stringToHash = fmt.Sprintf("%s:gauge:%f", m.ID, *m.Value)
+	}
+	h.Write([]byte(stringToHash))
+	dst := h.Sum(nil)
+
+	return hex.EncodeToString(dst)
 }
 
 type Metric interface {
@@ -30,6 +53,7 @@ type Metric interface {
 	GetTypeName() metrictype
 	GetValue() interface{}
 	UpdateValue(interface{})
+	CreateNewMetric() Metrics
 }
 
 type GaugeMetric struct {
@@ -62,6 +86,20 @@ func (gm *GaugeMetric) GetValue() interface{} {
 	gm.mu.RLock()
 	defer gm.mu.RUnlock()
 	return float64(gm.Value)
+}
+
+func (gm *GaugeMetric) CreateNewMetric() Metrics {
+	gm.mu.RLock()
+	defer gm.mu.RUnlock()
+	newM := Metrics{
+		ID:    gm.GetName(),
+		MType: gm.GetTypeName(),
+	}
+
+	v := gm.GetValue().(float64)
+	newM.Value = &v
+
+	return newM
 }
 
 func (gm *GaugeMetric) UpdateValue(v interface{}) {
@@ -98,6 +136,20 @@ func (cm *CounterMetric) UpdateValue(v interface{}) {
 		cm.Value += counter(newValue)
 		cm.mu.Unlock()
 	}
+}
+
+func (cm *CounterMetric) CreateNewMetric() Metrics {
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
+	newM := Metrics{
+		ID:    cm.GetName(),
+		MType: cm.GetTypeName(),
+	}
+
+	v := cm.GetValue().(int64)
+	newM.Delta = &v
+
+	return newM
 }
 
 func GetAllMetrics() map[string]Metric {

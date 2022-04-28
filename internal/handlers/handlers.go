@@ -3,16 +3,23 @@ package handlers
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
+	"crypto/hmac"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v4"
 
+	"github.com/whiterthanwhite/metricsagent/internal/metricdb"
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
+	"github.com/whiterthanwhite/metricsagent/internal/settings"
 )
 
 func UpdateMetricHandler(addedMetrics map[string]metrics.Metric, newMetrics map[string]metrics.Metrics) http.HandlerFunc {
@@ -185,6 +192,7 @@ func GetAllMetricsFromServer(serverMetrics []metrics.Metrics) http.HandlerFunc {
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
 		}
+
 		metricsBytes, err := json.Marshal(serverMetrics)
 		if err != nil {
 			http.Error(rw, "", http.StatusBadRequest)
@@ -194,14 +202,12 @@ func GetAllMetricsFromServer(serverMetrics []metrics.Metrics) http.HandlerFunc {
 		if err != nil {
 			http.Error(rw, "", http.StatusInternalServerError)
 		}
-		rw.Header().Set("Content-Type", "application/json")
-		if _, err := rw.Write(metricsBytes); err != nil {
-			log.Fatal(err)
-		}
+
+		writeResponseBody(metricsBytes, rw)
 	}
 }
 
-func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.HandlerFunc {
+func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettings settings.SysSettings, mdb metricdb.Metricdb) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
@@ -214,16 +220,35 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 		}
 
 		var requestMetric metrics.Metrics
-		if err := json.NewDecoder(r.Body).Decode(&requestMetric); err != nil {
+		if err := getMetricFromRequestBody(&requestMetric, r); err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
 			return
 		}
-		r.Body.Close()
+
+		// Check hash key >>
+		if serverSettings.Key != "" {
+			requestHash, err := hex.DecodeString(requestMetric.Hash)
+			if err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			s := requestMetric.GenerateHash(serverSettings.Key)
+			checkHash, err := hex.DecodeString(s)
+			if err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if !hmac.Equal(requestHash, checkHash) {
+				http.Error(rw, "", http.StatusBadRequest)
+				return
+			}
+		}
+		// Check hash key <<
 
 		m, ok := serverMetrics[requestMetric.ID]
 		if !ok {
 			serverMetrics[requestMetric.ID] = requestMetric
-			log.Println(requestMetric)
+			m = requestMetric
 		} else {
 			switch m.MType {
 			case metrics.CounterType:
@@ -239,31 +264,134 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics) http.Handler
 			serverMetrics[requestMetric.ID] = m
 		}
 
-		rw.Header().Set("Content-Type", "application/json")
-		_, err := rw.Write([]byte(`{}`))
-		if err != nil {
-			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-			return
+		if mdb.IsConnActive() {
+			connCtx, cancel := context.WithTimeout(mdb.GetDBContext(), 5*time.Second)
+			switch m.MType {
+			case metrics.CounterType:
+				_ = mdb.Conn.QueryRow(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, *m.Delta, nil)
+			case metrics.GaugeType:
+				_ = mdb.Conn.QueryRow(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, nil, *m.Value)
+			}
+			cancel()
 		}
+
+		writeResponseBody([]byte("{}"), rw)
 	}
 }
 
-func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerFunc {
+func UpdateMetricsOnServer(serverMetrics map[string]metrics.Metrics, serverSettings settings.SysSettings, mdb metricdb.Metricdb) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		var requestMetric metrics.Metrics
-		if err := json.NewDecoder(r.Body).Decode(&requestMetric); err != nil {
-			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+		if r.Header.Get("Content-Type") != "application/json" {
+			http.Error(rw, "", http.StatusBadRequest)
+			return
+		}
+
+		if r.ContentLength == 0 {
+			http.Error(rw, "", http.StatusBadRequest)
+			return
+		}
+
+		var requestedMetrics []metrics.Metrics
+		if err := json.NewDecoder(r.Body).Decode(&requestedMetrics); err != nil {
+			http.Error(rw, "", http.StatusInternalServerError)
 			return
 		}
 		r.Body.Close()
 
+		var tx pgx.Tx
+		if mdb.IsConnActive() {
+			var err error
+			ctx, cancel := context.WithCancel(mdb.GetDBContext())
+			defer cancel()
+			tx, err = mdb.Conn.Begin(ctx)
+			if err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		for _, requestedMetric := range requestedMetrics {
+			// Check hash key >>
+			if serverSettings.Key != "" {
+				requestHash, err := hex.DecodeString(requestedMetric.Hash)
+				if err != nil {
+					http.Error(rw, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				s := requestedMetric.GenerateHash(serverSettings.Key)
+				checkHash, err := hex.DecodeString(s)
+				if err != nil {
+					http.Error(rw, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if !hmac.Equal(requestHash, checkHash) {
+					http.Error(rw, "", http.StatusBadRequest)
+					return
+				}
+			}
+			// Check hash key <<
+
+			m, ok := serverMetrics[requestedMetric.ID]
+			if !ok {
+				serverMetrics[requestedMetric.ID] = requestedMetric
+				m = requestedMetric
+			} else {
+				switch m.MType {
+				case metrics.CounterType:
+					var tempDelta int64 = 0
+					if m.Delta != nil {
+						tempDelta = *m.Delta
+					}
+					tempDelta += *requestedMetric.Delta
+					m.Delta = &tempDelta
+				case metrics.GaugeType:
+					m.Value = requestedMetric.Value
+				}
+				serverMetrics[requestedMetric.ID] = m
+			}
+
+			if mdb.IsConnActive() {
+				connCtx, connCancel := context.WithTimeout(mdb.GetDBContext(), 5*time.Second)
+				switch m.MType {
+				case metrics.CounterType:
+					if _, err := tx.Exec(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, *m.Delta, nil); err != nil {
+						log.Println(err.Error())
+					}
+					log.Printf("insert metric %v of type %v with value %v", m.ID, m.MType, *m.Delta)
+				case metrics.GaugeType:
+					if _, err := tx.Exec(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, nil, *m.Value); err != nil {
+						log.Println(err.Error())
+					}
+					log.Printf("insert metric %v of type %v with value %v", m.ID, m.MType, *m.Value)
+				}
+				connCancel()
+			}
+		}
+
+		if err := tx.Commit(mdb.GetDBContext()); err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		rw.WriteHeader(http.StatusOK)
+	}
+}
+
+func GetMetricFromServer(serverMetrics map[string]metrics.Metrics, serverSettings settings.SysSettings) http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		var requestMetric metrics.Metrics
+		if err := getMetricFromRequestBody(&requestMetric, r); err != nil {
+			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
+			return
+		}
+
 		m, ok := serverMetrics[requestMetric.ID]
-		log.Println("get", requestMetric, m, ok)
 		if !ok {
 			http.Error(rw, "metric is not found", http.StatusNotFound)
 			return
 		}
 
+		m.Hash = m.GenerateHash(serverSettings.Key)
 		returnMetric, err := json.Marshal(m)
 		if err != nil {
 			http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
@@ -283,17 +411,40 @@ func GetMetricFromServer(serverMetrics map[string]metrics.Metrics) http.HandlerF
 				http.Error(rw, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			_, err = rw.Write(encodedBuffer.Bytes())
-			if err != nil {
-				http.Error(rw, err.Error(), http.StatusInternalServerError)
-				return
-			}
-		} else {
-			_, err = rw.Write(returnMetric)
-			if err != nil {
-				http.Error(rw, fmt.Sprint(err), http.StatusInternalServerError)
-				return
-			}
+			returnMetric = encodedBuffer.Bytes()
 		}
+
+		writeResponseBody(returnMetric, rw)
+	}
+}
+
+func writeResponseBody(v []byte, rw http.ResponseWriter) {
+	rw.Header().Set("Content-Type", "application/json")
+	if _, err := rw.Write(v); err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func getMetricFromRequestBody(m *metrics.Metrics, r *http.Request) error {
+	defer r.Body.Close()
+	if err := json.NewDecoder(r.Body).Decode(m); err != nil {
+		return err
+	}
+	return nil
+}
+
+func CheckDatabaseConn(conn metricdb.Metricdb) http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		log.Println("Content-Type: ", r.Header.Get("Content-Type"))
+
+		if !conn.IsConnActive() {
+			http.Error(rw, "", http.StatusInternalServerError)
+			return
+		}
+		if err := conn.Ping(); err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		rw.WriteHeader(http.StatusOK)
 	}
 }

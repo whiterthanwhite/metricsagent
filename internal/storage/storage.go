@@ -11,10 +11,6 @@ import (
 	"github.com/whiterthanwhite/metricsagent/internal/settings"
 )
 
-var (
-	StorageSettings = settings.GetSysSettings()
-)
-
 func OpenMetricFileCSV() *os.File {
 	f, err := os.OpenFile("tmp.DS_Store", os.O_CREATE|os.O_RDWR, 0750)
 	if err != nil {
@@ -122,4 +118,37 @@ func (c *metricsReader) ReadMetrics() (map[string]metrics.Metrics, error) {
 
 func (c *metricsReader) Close() error {
 	return c.file.Close()
+}
+
+func RestoreMetricsFromFile(sysSettings settings.SysSettings) map[string]metrics.Metrics {
+	var serverMetrics map[string]metrics.Metrics = nil
+	if sysSettings.Restore && sysSettings.StoreFile != "" {
+		consumer, err := NewMetricsReader(sysSettings.StoreFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer consumer.Close()
+		serverMetrics, err = consumer.ReadMetrics()
+		if err != nil {
+			log.Println(err)
+		}
+	}
+	if serverMetrics == nil {
+		serverMetrics = metrics.GetAllNewMetrics()
+	}
+	return serverMetrics
+}
+
+func SaveMetricsOnFile(ms map[string]metrics.Metrics, sysSettings settings.SysSettings) {
+	if sysSettings.StoreFile == "" {
+		return
+	}
+	producer, err := NewMetricsWriter(sysSettings.StoreFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer producer.Close()
+	if err := producer.WriteMetrics(ms); err != nil {
+		log.Fatal(err)
+	}
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/whiterthanwhite/metricsagent/internal/handlers"
+	"github.com/whiterthanwhite/metricsagent/internal/metricdb"
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
 	"github.com/whiterthanwhite/metricsagent/internal/settings"
 	"github.com/whiterthanwhite/metricsagent/internal/storage"
@@ -22,6 +24,8 @@ var (
 	flagRestore       *bool
 	flagStoreInterval *time.Duration
 	flagStoreFile     *string
+	flagHashKey       *string
+	flagDBAddress     *string
 )
 
 func init() {
@@ -29,6 +33,8 @@ func init() {
 	flagRestore = flag.Bool("r", settings.DefaultRestore, "")
 	flagStoreInterval = flag.Duration("i", settings.DefaultStoreInterval, "")
 	flagStoreFile = flag.String("f", settings.DefaultStoreFile, "")
+	flagHashKey = flag.String("k", settings.DefaultHashKey, "")
+	flagDBAddress = flag.String("d", settings.DefaultDBAddress, "")
 }
 
 func startSaveMetricsOnFile(serverMetrics map[string]metrics.Metrics) {
@@ -40,83 +46,91 @@ func startSaveMetricsOnFile(serverMetrics map[string]metrics.Metrics) {
 	defer saveTicker.Stop()
 	for {
 		<-saveTicker.C
-		saveMetricsOnFile(serverMetrics)
+		storage.SaveMetricsOnFile(serverMetrics, ServerSettings)
 	}
 }
 
-func saveMetricsOnFile(serverMetrics map[string]metrics.Metrics) {
-	if ServerSettings.StoreFile == "" {
+func createMetricTable(mdb metricdb.Metricdb) {
+	if !mdb.IsConnActive() {
 		return
 	}
-	producer, err := storage.NewMetricsWriter(ServerSettings.StoreFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer producer.Close()
-	if err := producer.WriteMetrics(serverMetrics); err != nil {
-		log.Fatal(err)
-	}
-}
 
-func restoreMetricsFromFile() map[string]metrics.Metrics {
-	var serverMetrics map[string]metrics.Metrics = nil
-	if ServerSettings.Restore && ServerSettings.StoreFile != "" {
-		consumer, err := storage.NewMetricsReader(ServerSettings.StoreFile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer consumer.Close()
-		serverMetrics, err = consumer.ReadMetrics()
-		if err != nil {
-			log.Println(err)
-		}
+	var tableExists bool
+
+	ctx, cancel := context.WithTimeout(mdb.GetDBContext(), 5*time.Second)
+
+	row := mdb.Conn.QueryRow(ctx, `select exists (select from information_schema.tables where table_name = 'metrics');`)
+	cancel()
+	if err := row.Scan(&tableExists); err != nil {
+		log.Println(err.Error())
+		return
 	}
-	if serverMetrics == nil {
-		serverMetrics = metrics.GetAllNewMetrics()
+
+	if tableExists {
+		return
 	}
-	return serverMetrics
+
+	ctx, cancel = context.WithTimeout(mdb.GetDBContext(), 5*time.Second)
+
+	_ = mdb.Conn.QueryRow(ctx, "CREATE TABLE metrics (id varchar(50) not null, type varchar(50) not null, delta int, value double precision);")
+	cancel()
+
+	log.Println("table created")
 }
 
 func main() {
 	log.Println("Server start")
 
 	flag.Parse()
-	log.Println(ServerSettings.Address, *flagAddress)
 	if ServerSettings.Address == settings.DefaultAddress {
 		ServerSettings.Address = *flagAddress
 	}
-	log.Println(ServerSettings.Restore, *flagRestore)
 	if ServerSettings.Restore == settings.DefaultRestore {
 		ServerSettings.Restore = ServerSettings.Restore || *flagRestore
 	}
-	log.Println(ServerSettings.StoreInterval, *flagStoreInterval)
 	if ServerSettings.StoreInterval == settings.DefaultStoreInterval {
 		ServerSettings.StoreInterval = *flagStoreInterval
 	}
-	log.Println(ServerSettings.StoreFile, *flagStoreFile)
 	if ServerSettings.StoreFile == settings.DefaultStoreFile {
 		ServerSettings.StoreFile = *flagStoreFile
 	}
+	if ServerSettings.Key == settings.DefaultHashKey {
+		ServerSettings.Key = *flagHashKey
+	}
+	if ServerSettings.MetricDBAdress == settings.DefaultDBAddress {
+		ServerSettings.MetricDBAdress = *flagDBAddress
+	}
 	log.Println(ServerSettings)
 
-	newServerMetrics := restoreMetricsFromFile()
+	newServerMetrics := storage.RestoreMetricsFromFile(ServerSettings)
 	oldServerMetrics := metrics.GetAllMetrics()
-	defer saveMetricsOnFile(newServerMetrics)
+	defer storage.SaveMetricsOnFile(newServerMetrics, ServerSettings)
 	go startSaveMetricsOnFile(newServerMetrics)
+
+	mdb := metricdb.CreateDBConnnect(context.Background(), ServerSettings.MetricDBAdress)
+	defer mdb.DBClose()
+	createMetricTable(mdb)
 
 	r := chi.NewRouter()
 
+	// TODO: Add middleware
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlers.GetAllMetricsFromFile(oldServerMetrics, newServerMetrics))
 		r.Route("/update", func(r chi.Router) {
-			r.Post("/", handlers.UpdateMetricOnServer(newServerMetrics))
+			r.Post("/", handlers.UpdateMetricOnServer(newServerMetrics, ServerSettings, mdb))
 			r.Post("/{metricType}/{metricName}/{metricValue}",
 				handlers.UpdateMetricHandler(oldServerMetrics, newServerMetrics))
 		})
+		r.Route("/updates", func(r chi.Router) {
+			r.Post("/", handlers.UpdateMetricsOnServer(newServerMetrics, ServerSettings, mdb))
+		})
 		r.Route("/value", func(r chi.Router) {
-			r.Post("/", handlers.GetMetricFromServer(newServerMetrics))
+			r.Post("/", handlers.GetMetricFromServer(newServerMetrics, ServerSettings))
 			r.Get("/{metricType}/{metricName}",
 				handlers.GetMetricValueFromServer(oldServerMetrics))
+		})
+		r.Route("/ping", func(r chi.Router) {
+			r.Get("/", handlers.CheckDatabaseConn(mdb))
 		})
 		// r.Post("/", handlers.GetAllMetricsFromServer(serverMetrics))
 	})

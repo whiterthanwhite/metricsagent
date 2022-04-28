@@ -24,12 +24,49 @@ var (
 	flagAddress        *string
 	flagReportInterval *time.Duration
 	flagPollInterval   *time.Duration
+	flagHashKey        *string
 )
 
 func init() {
 	flagAddress = flag.String("a", settings.DefaultAddress, "")
 	flagReportInterval = flag.Duration("r", settings.DefaultReportInterval, "")
 	flagPollInterval = flag.Duration("p", settings.DefaultPollInterval, "")
+	flagHashKey = flag.String("k", settings.DefaultHashKey, "")
+}
+
+func sendMetricsToServer(agentClient *http.Client, ms []metrics.Metrics) {
+	msJSON, err := json.Marshal(ms)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+
+	urlString := fmt.Sprintf("http://%s/updates/", AgentSettings.Address)
+	requestBodyBuff := bytes.NewBuffer(msJSON)
+	request, err := http.NewRequest(http.MethodPost, urlString, requestBodyBuff)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+
+	request.Close = true
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Content-Length", fmt.Sprint(requestBodyBuff.Len()))
+
+	response, err := agentClient.Do(request)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+	defer response.Body.Close()
+
+	responseBody, err := io.ReadAll(response.Body)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+
+	log.Println("Response body: ", string(responseBody))
 }
 
 func sendNewUpdate(agentClient *http.Client, m *metrics.Metrics) {
@@ -101,22 +138,6 @@ func getMetricURLString(m metrics.Metric) string {
 	return stringURL
 }
 
-func createNewNetric(oldM metrics.Metric) metrics.Metrics {
-	newM := metrics.Metrics{
-		ID:    oldM.GetName(),
-		MType: oldM.GetTypeName(),
-	}
-
-	switch v := oldM.GetValue().(type) {
-	case int64:
-		newM.Delta = &v
-	case float64:
-		newM.Value = &v
-	}
-
-	return newM
-}
-
 func setUpHTTPClient(agentClient *http.Client) {
 	agentClient.Timeout = 0 * time.Second
 }
@@ -161,6 +182,9 @@ func main() {
 	if AgentSettings.ReportInterval == settings.DefaultReportInterval {
 		AgentSettings.ReportInterval = *flagReportInterval
 	}
+	if AgentSettings.Key == settings.DefaultHashKey {
+		AgentSettings.Key = *flagHashKey
+	}
 	log.Println(AgentSettings)
 
 	go enableTerminationSignals()
@@ -196,13 +220,15 @@ func main() {
 			addedMetrics["PollCount"] = pollCount
 		case <-reportTicker.C:
 			log.Println("Send Metrics To Server")
+			ms := make([]metrics.Metrics, 0)
 			for _, metric := range addedMetrics {
-				// old
 				// sendOldUpdate(httpClient, &metric)
-				// new
-				newMetric := createNewNetric(metric)
-				sendNewUpdate(httpClient, &newMetric)
+				newMetric := metric.CreateNewMetric()
+				newMetric.Hash = newMetric.GenerateHash(AgentSettings.Key)
+				// sendNewUpdate(httpClient, &newMetric)
+				ms = append(ms, newMetric)
 			}
+			sendMetricsToServer(httpClient, ms)
 		case <-endTimer.C:
 			os.Exit(0)
 		}
