@@ -57,40 +57,50 @@ type Metric interface {
 }
 
 type GaugeMetric struct {
+	mtx      sync.RWMutex
 	Name     string
 	TypeName metrictype
 	Value    gauge
-	mu       sync.RWMutex
 }
 
 type CounterMetric struct {
+	mtx      sync.RWMutex
 	Name     string
 	TypeName metrictype
 	Value    counter
-	mu       sync.RWMutex
 }
 
 func (gm *GaugeMetric) GetName() string {
-	gm.mu.RLock()
-	defer gm.mu.RUnlock()
+	gm.mtx.RLock()
+	defer gm.mtx.RUnlock()
+
 	return gm.Name
 }
 
 func (gm *GaugeMetric) GetTypeName() metrictype {
-	gm.mu.RLock()
-	defer gm.mu.RUnlock()
+	gm.mtx.RLock()
+	defer gm.mtx.RUnlock()
+
 	return gm.TypeName
 }
 
 func (gm *GaugeMetric) GetValue() interface{} {
-	gm.mu.RLock()
-	defer gm.mu.RUnlock()
+	gm.mtx.RLock()
+	defer gm.mtx.RUnlock()
+
 	return float64(gm.Value)
 }
 
+func (gm *GaugeMetric) UpdateValue(v interface{}) {
+	gm.mtx.Lock()
+	defer gm.mtx.Unlock()
+
+	if newValue, ok := v.(float64); ok {
+		gm.Value = gauge(newValue)
+	}
+}
+
 func (gm *GaugeMetric) CreateNewMetric() Metrics {
-	gm.mu.RLock()
-	defer gm.mu.RUnlock()
 	newM := Metrics{
 		ID:    gm.GetName(),
 		MType: gm.GetTypeName(),
@@ -102,45 +112,42 @@ func (gm *GaugeMetric) CreateNewMetric() Metrics {
 	return newM
 }
 
-func (gm *GaugeMetric) UpdateValue(v interface{}) {
-	newValue, ok := v.(float64)
-	if ok {
-		gm.mu.Lock()
-		gm.Value = gauge(newValue)
-		gm.mu.Unlock()
-	}
-}
-
 func (cm *CounterMetric) GetName() string {
-	cm.mu.RLock()
-	defer cm.mu.RUnlock()
+	cm.mtx.RLock()
+	defer cm.mtx.RUnlock()
+
 	return cm.Name
 }
 
 func (cm *CounterMetric) GetTypeName() metrictype {
-	cm.mu.RLock()
-	defer cm.mu.RUnlock()
+	cm.mtx.RLock()
+	defer cm.mtx.RUnlock()
+
 	return cm.TypeName
 }
 
 func (cm *CounterMetric) GetValue() interface{} {
-	cm.mu.RLock()
-	defer cm.mu.RUnlock()
+	cm.mtx.RLock()
+	defer cm.mtx.RUnlock()
+
 	return int64(cm.Value)
 }
 
 func (cm *CounterMetric) UpdateValue(v interface{}) {
-	newValue, ok := v.(int64)
-	if ok {
-		cm.mu.Lock()
-		cm.Value += counter(newValue)
-		cm.mu.Unlock()
+	cm.mtx.Lock()
+	defer cm.mtx.Unlock()
+
+	switch nv := v.(type) {
+	case int:
+		cm.Value += counter(nv)
+	default:
+		if newValue, ok := nv.(int64); ok {
+			cm.Value += counter(newValue)
+		}
 	}
 }
 
 func (cm *CounterMetric) CreateNewMetric() Metrics {
-	cm.mu.RLock()
-	defer cm.mu.RUnlock()
 	newM := Metrics{
 		ID:    cm.GetName(),
 		MType: cm.GetTypeName(),
@@ -177,6 +184,9 @@ func GetAllNewMetrics() map[string]Metrics {
 		case GaugeType:
 			value := 0.0
 			tempMetric.Value = &value
+		}
+		if tempMetric.ID == "PollCount" {
+			fmt.Println(tempMetric)
 		}
 		standardMetrics[metricDescription.MName] = tempMetric
 	}
