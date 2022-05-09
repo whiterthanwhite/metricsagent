@@ -370,9 +370,11 @@ func UpdateMetricsOnServer(serverMetrics map[string]metrics.Metrics, serverSetti
 			}
 		}
 
-		if err := tx.Commit(mdb.GetDBContext()); err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return
+		if mdb.IsConnActive() {
+			if err := tx.Commit(mdb.GetDBContext()); err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
 
 		rw.WriteHeader(http.StatusOK)
