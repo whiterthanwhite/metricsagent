@@ -354,15 +354,17 @@ func UpdateMetricsOnServer(serverMetrics map[string]metrics.Metrics, serverSetti
 				connCtx, connCancel := context.WithTimeout(mdb.GetDBContext(), 5*time.Second)
 				switch m.MType {
 				case metrics.CounterType:
+					log.Printf("Try: metric %v of type %v with value %v", m.ID, m.MType, m.Delta)
 					if _, err := tx.Exec(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, *m.Delta, nil); err != nil {
 						log.Println(err.Error())
 					}
-					log.Printf("insert metric %v of type %v with value %v", m.ID, m.MType, *m.Delta)
+					log.Printf("Success: metric %v of type %v with value %v", m.ID, m.MType, *m.Delta)
 				case metrics.GaugeType:
+					log.Printf("Try: metric %v of type %v with value %v", m.ID, m.MType, m.Value)
 					if _, err := tx.Exec(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, nil, *m.Value); err != nil {
 						log.Println(err.Error())
 					}
-					log.Printf("insert metric %v of type %v with value %v", m.ID, m.MType, *m.Value)
+					log.Printf("Success: metric %v of type %v with value %v", m.ID, m.MType, *m.Value)
 				}
 				connCancel()
 			}
