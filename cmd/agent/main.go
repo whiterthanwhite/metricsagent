@@ -179,11 +179,11 @@ func UpdateStandardMetrics(agentMetrics map[string]metrics.Metric, ctx context.C
 
 	pollCount := agentMetrics["PollCount"]
 	randomValue := agentMetrics["RandomValue"]
-	rand.Seed(time.Now().Unix())
-	randomValue.UpdateValue(rand.Float64())
-	pollCount.UpdateValue(1)
-
 	for processing {
+		rand.Seed(time.Now().Unix())
+		randomValue.UpdateValue(rand.Float64())
+		pollCount.UpdateValue(1)
+
 		select {
 		case <-pollTicker.C:
 			for _, m := range agentMetrics {
@@ -203,7 +203,6 @@ func UpdateStandardMetrics(agentMetrics map[string]metrics.Metric, ctx context.C
 		case <-ctx.Done():
 			pollTicker.Stop()
 			processing = false
-			break
 		}
 	}
 }
@@ -237,7 +236,6 @@ func UpdateAdditionalMetrics(agentMetrics map[string]metrics.Metric, ctx context
 		case <-ctx.Done():
 			pollTicker.Stop()
 			processing = false
-			break
 		}
 	}
 }
@@ -262,7 +260,6 @@ func MainSendFunction(agentMetrics map[string]metrics.Metric, httpClient *http.C
 		case <-ctx.Done():
 			reportTicker.Stop()
 			processing = false
-			break
 		}
 	}
 }

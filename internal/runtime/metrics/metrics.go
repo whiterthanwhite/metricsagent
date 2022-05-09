@@ -185,9 +185,6 @@ func GetAllNewMetrics() map[string]Metrics {
 			value := 0.0
 			tempMetric.Value = &value
 		}
-		if tempMetric.ID == "PollCount" {
-			fmt.Println(tempMetric)
-		}
 		standardMetrics[metricDescription.MName] = tempMetric
 	}
 	return standardMetrics
