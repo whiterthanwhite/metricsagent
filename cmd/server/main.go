@@ -63,16 +63,20 @@ func createMetricTable(ctx context.Context, conn *metricdb.Connection) {
 	var exists bool
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	row := conn.QueryRow(ctx, "select exists (select from information_schema.tables where table_name = 'metrics');")
-	cancel()
+	defer cancel()
 	if err := row.Scan(&exists); err != nil {
 		log.Println(err.Error())
 		return
 	}
 
 	if !exists {
-		ctx, cancel = context.WithTimeout(ctx, 5*time.Second)
-		_ = conn.QueryRow(ctx, "CREATE TABLE metrics (id varchar(50) not null, type varchar(50) not null, delta int, value double precision);")
-		cancel()
+		ctx, cancel2 := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel2()
+		row = conn.QueryRow(ctx, "CREATE TABLE metrics (id varchar(50) not null, type varchar(50) not null, delta int, value double precision);")
+		if err := row.Scan(); err != nil {
+			log.Println(err.Error())
+			return
+		}
 
 		log.Println("table created")
 	}
