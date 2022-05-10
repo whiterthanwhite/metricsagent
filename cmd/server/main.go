@@ -37,16 +37,21 @@ func init() {
 	flagDBAddress = flag.String("d", settings.DefaultDBAddress, "")
 }
 
-func startSaveMetricsOnFile(serverMetrics map[string]metrics.Metrics) {
+func startSaveMetricsOnFile(ctx context.Context, serverMetrics map[string]metrics.Metrics) {
 	if ServerSettings.StoreFile == "" {
 		return
 	}
 
+	processing := true
 	saveTicker := time.NewTicker(ServerSettings.StoreInterval)
-	defer saveTicker.Stop()
-	for {
-		<-saveTicker.C
-		storage.SaveMetricsOnFile(serverMetrics, ServerSettings)
+	for processing {
+		select {
+		case <-saveTicker.C:
+			storage.SaveMetricsOnFile(serverMetrics, ServerSettings)
+		case <-ctx.Done():
+			saveTicker.Stop()
+			processing = false
+		}
 	}
 }
 
@@ -57,7 +62,7 @@ func createMetricTable(mdb metricdb.Metricdb) {
 
 	var tableExists bool
 
-	ctx, cancel := context.WithTimeout(mdb.GetDBContext(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(mdb.GetContext(), 5*time.Second)
 
 	row := mdb.Conn.QueryRow(ctx, `select exists (select from information_schema.tables where table_name = 'metrics');`)
 	cancel()
@@ -70,7 +75,7 @@ func createMetricTable(mdb metricdb.Metricdb) {
 		return
 	}
 
-	ctx, cancel = context.WithTimeout(mdb.GetDBContext(), 5*time.Second)
+	ctx, cancel = context.WithTimeout(mdb.GetContext(), 5*time.Second)
 
 	_ = mdb.Conn.QueryRow(ctx, "CREATE TABLE metrics (id varchar(50) not null, type varchar(50) not null, delta int, value double precision);")
 	cancel()
@@ -102,13 +107,16 @@ func main() {
 	}
 	log.Println(ServerSettings)
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	newServerMetrics := storage.RestoreMetricsFromFile(ServerSettings)
 	oldServerMetrics := metrics.GetAllMetrics()
 	defer storage.SaveMetricsOnFile(newServerMetrics, ServerSettings)
-	go startSaveMetricsOnFile(newServerMetrics)
+	go startSaveMetricsOnFile(ctx, newServerMetrics)
 
-	mdb := metricdb.CreateDBConnnect(context.Background(), ServerSettings.MetricDBAdress)
-	defer mdb.DBClose()
+	mdb := metricdb.CreateConnnection(ctx, ServerSettings.MetricDBAdress)
+	defer mdb.CloseConnection()
 	createMetricTable(mdb)
 
 	r := chi.NewRouter()

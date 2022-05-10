@@ -265,7 +265,7 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettin
 		}
 
 		if mdb.IsConnActive() {
-			connCtx, cancel := context.WithTimeout(mdb.GetDBContext(), 5*time.Second)
+			connCtx, cancel := context.WithTimeout(mdb.GetContext(), 5*time.Second)
 			switch m.MType {
 			case metrics.CounterType:
 				_ = mdb.Conn.QueryRow(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, *m.Delta, nil)
@@ -301,7 +301,7 @@ func UpdateMetricsOnServer(serverMetrics map[string]metrics.Metrics, serverSetti
 		var tx pgx.Tx
 		if mdb.IsConnActive() {
 			var err error
-			ctx, cancel := context.WithCancel(mdb.GetDBContext())
+			ctx, cancel := context.WithCancel(mdb.GetContext())
 			defer cancel()
 			tx, err = mdb.Conn.Begin(ctx)
 			if err != nil {
@@ -351,26 +351,30 @@ func UpdateMetricsOnServer(serverMetrics map[string]metrics.Metrics, serverSetti
 			}
 
 			if mdb.IsConnActive() {
-				connCtx, connCancel := context.WithTimeout(mdb.GetDBContext(), 5*time.Second)
+				connCtx, connCancel := context.WithTimeout(mdb.GetContext(), 5*time.Second)
 				switch m.MType {
 				case metrics.CounterType:
+					log.Printf("Try: metric %v of type %v with value %v", m.ID, m.MType, m.Delta)
 					if _, err := tx.Exec(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, *m.Delta, nil); err != nil {
 						log.Println(err.Error())
 					}
-					log.Printf("insert metric %v of type %v with value %v", m.ID, m.MType, *m.Delta)
+					log.Printf("Success: metric %v of type %v with value %v", m.ID, m.MType, *m.Delta)
 				case metrics.GaugeType:
+					log.Printf("Try: metric %v of type %v with value %v", m.ID, m.MType, m.Value)
 					if _, err := tx.Exec(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, nil, *m.Value); err != nil {
 						log.Println(err.Error())
 					}
-					log.Printf("insert metric %v of type %v with value %v", m.ID, m.MType, *m.Value)
+					log.Printf("Success: metric %v of type %v with value %v", m.ID, m.MType, *m.Value)
 				}
 				connCancel()
 			}
 		}
 
-		if err := tx.Commit(mdb.GetDBContext()); err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return
+		if mdb.IsConnActive() {
+			if err := tx.Commit(mdb.GetContext()); err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
 
 		rw.WriteHeader(http.StatusOK)

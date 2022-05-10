@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -14,6 +15,9 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
 
 	"github.com/whiterthanwhite/metricsagent/internal/runtime/metrics"
 	"github.com/whiterthanwhite/metricsagent/internal/settings"
@@ -169,8 +173,99 @@ func enableTerminationSignals() {
 	os.Exit(exitCode)
 }
 
+func UpdateStandardMetrics(agentMetrics map[string]metrics.Metric, ctx context.Context) {
+	processing := true
+	pollTicker := time.NewTicker(AgentSettings.PollInterval)
+
+	pollCount := agentMetrics["PollCount"]
+	randomValue := agentMetrics["RandomValue"]
+	for processing {
+		rand.Seed(time.Now().Unix())
+		randomValue.UpdateValue(rand.Float64())
+		pollCount.UpdateValue(1)
+
+		select {
+		case <-pollTicker.C:
+			for _, m := range agentMetrics {
+				currMetric := m.GetName()
+				switch currMetric {
+				case "Alloc", "BuckHashSys", "Frees", "GCCPUFraction",
+					"OtherSys", "GCSys", "HeapAlloc", "HeapIdle", "HeapInuse",
+					"HeapObjects", "HeapReleased", "HeapSys", "LastGC",
+					"Lookups", "MCacheInuse", "MCacheSys", "MSpanInuse",
+					"MSpanSys", "Mallocs", "NextGC", "NumForcedGC", "NumGC",
+					"PauseTotalNs", "StackInuse", "StackSys", "Sys",
+					"TotalAlloc":
+					m.UpdateValue(randomValue.GetValue())
+					pollCount.UpdateValue(1)
+				}
+			}
+		case <-ctx.Done():
+			pollTicker.Stop()
+			processing = false
+		}
+	}
+}
+
+func UpdateAdditionalMetrics(agentMetrics map[string]metrics.Metric, ctx context.Context) {
+	processing := true
+	pollTicker := time.NewTicker(AgentSettings.PollInterval)
+
+	totalMemory := agentMetrics["TotalMemory"]
+	freeMemory := agentMetrics["FreeMemory"]
+	cpuUtilization1 := agentMetrics["CPUutilization1"]
+	pollCount := agentMetrics["PollCount"]
+
+	for processing {
+		select {
+		case <-pollTicker.C:
+			cpuInfo, err := cpu.Times(false)
+			if err != nil {
+				log.Fatal(err)
+			}
+			memInfo, err := mem.VirtualMemory()
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			totalMemory.UpdateValue(float64(memInfo.Total))
+			freeMemory.UpdateValue(float64(memInfo.Free))
+			cpuUtilization1.UpdateValue(cpuInfo[0].User + cpuInfo[0].System -
+				cpuInfo[0].Idle - cpuInfo[0].Steal)
+			pollCount.UpdateValue(3)
+		case <-ctx.Done():
+			pollTicker.Stop()
+			processing = false
+		}
+	}
+}
+
+func MainSendFunction(agentMetrics map[string]metrics.Metric, httpClient *http.Client, ctx context.Context) {
+	log.Println("Send Metrics To Server")
+	processing := true
+	reportTicker := time.NewTicker(AgentSettings.ReportInterval)
+
+	for processing {
+		select {
+		case <-reportTicker.C:
+			ms := make([]metrics.Metrics, 0)
+			for _, metric := range agentMetrics {
+				// sendOldUpdate(httpClient, &metric)
+				newMetric := metric.CreateNewMetric()
+				newMetric.Hash = newMetric.GenerateHash(AgentSettings.Key)
+				// sendNewUpdate(httpClient, &newMetric)
+				ms = append(ms, newMetric)
+			}
+			sendMetricsToServer(httpClient, ms)
+		case <-ctx.Done():
+			reportTicker.Stop()
+			processing = false
+		}
+	}
+}
+
 func main() {
-	log.Println("Start Metric Agent")
+	log.Println("Start agent")
 
 	flag.Parse()
 	if AgentSettings.Address == settings.DefaultAddress {
@@ -192,45 +287,14 @@ func main() {
 	httpClient := &http.Client{}
 	setUpHTTPClient(httpClient)
 
-	addedMetrics := metrics.GetAllMetrics()
+	agentMetrics := metrics.GetAllMetrics()
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
 
-	pollTicker := time.NewTicker(AgentSettings.PollInterval)
-	defer pollTicker.Stop()
-	reportTicker := time.NewTicker(AgentSettings.ReportInterval)
-	defer reportTicker.Stop()
-	endTimer := time.NewTimer(1 * time.Minute)
-	defer endTimer.Stop()
+	go UpdateStandardMetrics(agentMetrics, ctx)
+	go UpdateAdditionalMetrics(agentMetrics, ctx)
+	go MainSendFunction(agentMetrics, httpClient, ctx)
 
-	for {
-		select {
-		case <-pollTicker.C:
-			randomValue := addedMetrics["RandomValue"]
-			randomiser := rand.NewSource(time.Now().Unix())
-			randomValue.UpdateValue(float64(randomiser.Int63() % 10000))
-			addedMetrics["RandomValue"] = randomValue
-			var counter int64 = 0
-			for _, m := range addedMetrics {
-				if m.GetName() != "RandomValue" && m.GetName() != "PollCount" {
-					m.UpdateValue(randomValue.GetValue())
-					counter++
-				}
-			}
-			pollCount := addedMetrics["PollCount"]
-			pollCount.UpdateValue(counter)
-			addedMetrics["PollCount"] = pollCount
-		case <-reportTicker.C:
-			log.Println("Send Metrics To Server")
-			ms := make([]metrics.Metrics, 0)
-			for _, metric := range addedMetrics {
-				// sendOldUpdate(httpClient, &metric)
-				newMetric := metric.CreateNewMetric()
-				newMetric.Hash = newMetric.GenerateHash(AgentSettings.Key)
-				// sendNewUpdate(httpClient, &newMetric)
-				ms = append(ms, newMetric)
-			}
-			sendMetricsToServer(httpClient, ms)
-		case <-endTimer.C:
-			os.Exit(0)
-		}
-	}
+	<-ctx.Done()
+	fmt.Println("Finish agent")
 }

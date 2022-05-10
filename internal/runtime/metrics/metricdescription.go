@@ -34,6 +34,11 @@ func GetStandardMetrics() map[string]MetricDescription {
 	metricDescriptions["StackSys"] = MetricDescription{MName: "StackSys", MType: GaugeType}
 	metricDescriptions["Sys"] = MetricDescription{MName: "Sys", MType: GaugeType}
 	metricDescriptions["TotalAlloc"] = MetricDescription{MName: "TotalAlloc", MType: GaugeType}
+
+	metricDescriptions["TotalMemory"] = MetricDescription{MName: "TotalMemory", MType: GaugeType}
+	metricDescriptions["FreeMemory"] = MetricDescription{MName: "FreeMemory", MType: GaugeType}
+	metricDescriptions["CPUutilization1"] = MetricDescription{MName: "CPUutilization1", MType: GaugeType}
+
 	metricDescriptions["RandomValue"] = MetricDescription{MName: "RandomValue", MType: GaugeType}
 	metricDescriptions["PollCount"] = MetricDescription{MName: "PollCount", MType: CounterType}
 	return metricDescriptions
