@@ -354,6 +354,7 @@ func UpdateMetricsOnServer(serverMetrics map[string]metrics.Metrics, serverSetti
 
 			if !conn.IsConnClose() {
 				connCtx, connCancel := context.WithTimeout(ctx, 5*time.Second)
+				defer connCancel()
 				switch m.MType {
 				case metrics.CounterType:
 					log.Printf("Try: metric %v of type %v with value %v", m.ID, m.MType, m.Delta)
@@ -368,7 +369,6 @@ func UpdateMetricsOnServer(serverMetrics map[string]metrics.Metrics, serverSetti
 					}
 					log.Printf("Success: metric %v of type %v with value %v", m.ID, m.MType, *m.Value)
 				}
-				connCancel()
 			}
 		}
 
