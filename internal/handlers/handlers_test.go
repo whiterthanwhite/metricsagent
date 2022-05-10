@@ -63,11 +63,11 @@ func TestUpdateMetricHandler(t *testing.T) {
 
 func TestUpdateMetricOnServer(t *testing.T) {
 	serverSettings := settings.GetSysSettings()
-	mdb := metricdb.CreateDBConnnect(context.Background(), "")
+	mdb := metricdb.CreateConnnection(context.Background(), "")
 	if !mdb.IsConnActive() {
 		return
 	}
-	defer mdb.DBClose()
+	defer mdb.CloseConnection()
 
 	serverMetrics := make(map[string]metrics.Metrics)
 
@@ -117,11 +117,11 @@ func TestUpdateMetricOnServer(t *testing.T) {
 
 func TestUpdateMetricsOnServer(t *testing.T) {
 	serverSettings := settings.GetSysSettings()
-	mdb := metricdb.CreateDBConnnect(context.Background(), serverSettings.MetricDBAdress)
+	mdb := metricdb.CreateConnnection(context.Background(), serverSettings.MetricDBAdress)
 	if !mdb.IsConnActive() {
 		return
 	}
-	defer mdb.DBClose()
+	defer mdb.CloseConnection()
 
 	serverMetrics := make(map[string]metrics.Metrics)
 
@@ -261,11 +261,11 @@ func TestGetMetricFromServer(t *testing.T) {
 }
 
 func TestCheckDatabaseConn(t *testing.T) {
-	mdb := metricdb.CreateDBConnnect(context.Background(), "")
+	mdb := metricdb.CreateConnnection(context.Background(), "")
 	if !mdb.IsConnActive() {
 		return
 	}
-	defer mdb.DBClose()
+	defer mdb.CloseConnection()
 
 	type want struct {
 		code int

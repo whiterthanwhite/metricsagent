@@ -12,7 +12,7 @@ type Metricdb struct {
 	ctx  context.Context
 }
 
-func CreateDBConnnect(ctx context.Context, connStr string) Metricdb {
+func CreateConnnection(ctx context.Context, connStr string) Metricdb {
 	mdb := Metricdb{
 		ctx: ctx,
 	}
@@ -25,7 +25,7 @@ func CreateDBConnnect(ctx context.Context, connStr string) Metricdb {
 	return mdb
 }
 
-func (mdb *Metricdb) GetDBContext() context.Context {
+func (mdb *Metricdb) GetContext() context.Context {
 	return mdb.ctx
 }
 
@@ -36,7 +36,7 @@ func (mdb *Metricdb) Ping() error {
 	return nil
 }
 
-func (mdb *Metricdb) DBClose() {
+func (mdb *Metricdb) CloseConnection() {
 	mdb.Conn.Close(mdb.ctx)
 }
 
