@@ -92,6 +92,7 @@ func TestUpdateMetricOnServer(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			log.Println("start: ", tt.name)
 			var v int64 = 4
 			m := metrics.Metrics{
 				ID:    "Alloc",
@@ -116,6 +117,7 @@ func TestUpdateMetricOnServer(t *testing.T) {
 			log.Println(string(body))
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
+			log.Println("stop: ", tt.name)
 		})
 	}
 }

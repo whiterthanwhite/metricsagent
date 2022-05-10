@@ -29,7 +29,7 @@ func (c *Connection) Begin(ctx context.Context) (pgx.Tx, error) {
 func (c *Connection) QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row {
 	var row pgx.Row
 	if len(args) > 0 {
-		row = c.conn.QueryRow(ctx, sql, args)
+		row = c.conn.QueryRow(ctx, sql, args...)
 	} else {
 		row = c.conn.QueryRow(ctx, sql)
 	}

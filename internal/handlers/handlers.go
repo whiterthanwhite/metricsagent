@@ -209,6 +209,7 @@ func GetAllMetricsFromServer(serverMetrics []metrics.Metrics) http.HandlerFunc {
 
 func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettings settings.SysSettings, conn *metricdb.Connection) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		log.Println(1)
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 		if r.Header.Get("Content-Type") != "application/json" {
@@ -268,11 +269,16 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettin
 
 		if !conn.IsConnClose() {
 			connCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+			defer cancel()
+			var row pgx.Row
 			switch m.MType {
 			case metrics.CounterType:
-				_ = conn.QueryRow(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, *m.Delta, nil)
+				row = conn.QueryRow(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, *m.Delta, nil)
 			case metrics.GaugeType:
-				_ = conn.QueryRow(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, nil, *m.Value)
+				row = conn.QueryRow(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, nil, *m.Value)
+			}
+			if err := row.Scan(); err != nil {
+				log.Println("Row: ", err.Error())
 			}
 			cancel()
 		}
@@ -352,7 +358,6 @@ func UpdateMetricsOnServer(serverMetrics map[string]metrics.Metrics, serverSetti
 				serverMetrics[requestedMetric.ID] = m
 			}
 
-			log.Printf("Try: metric %v of type %v with delta %v and value %v", m.ID, m.MType, m.Delta, m.Value)
 			if !conn.IsConnClose() {
 				connCtx, connCancel := context.WithTimeout(ctx, 5*time.Second)
 				defer connCancel()
