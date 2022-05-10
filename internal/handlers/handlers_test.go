@@ -11,7 +11,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	// "github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/whiterthanwhite/metricsagent/internal/metricdb"
@@ -62,12 +61,18 @@ func TestUpdateMetricHandler(t *testing.T) {
 }
 
 func TestUpdateMetricOnServer(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	serverSettings := settings.GetSysSettings()
-	mdb := metricdb.CreateConnnection(context.Background(), "")
-	if !mdb.IsConnActive() {
+	conn := metricdb.CreateConnnection(ctx, "")
+	if conn.IsConnClose() {
 		return
 	}
-	defer mdb.CloseConnection()
+	defer func() {
+		if err := conn.CloseConnection(ctx); err != nil {
+			log.Println(err.Error())
+		}
+	}()
 
 	serverMetrics := make(map[string]metrics.Metrics)
 
@@ -101,7 +106,7 @@ func TestUpdateMetricOnServer(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, "/update", buff)
 			request.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(UpdateMetricOnServer(serverMetrics, serverSettings, mdb))
+			h := http.HandlerFunc(UpdateMetricOnServer(serverMetrics, serverSettings, conn))
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()
@@ -116,12 +121,18 @@ func TestUpdateMetricOnServer(t *testing.T) {
 }
 
 func TestUpdateMetricsOnServer(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	serverSettings := settings.GetSysSettings()
-	mdb := metricdb.CreateConnnection(context.Background(), serverSettings.MetricDBAdress)
-	if !mdb.IsConnActive() {
+	conn := metricdb.CreateConnnection(ctx, serverSettings.MetricDBAdress)
+	if conn.IsConnClose() {
 		return
 	}
-	defer mdb.CloseConnection()
+	defer func() {
+		if err := conn.CloseConnection(ctx); err != nil {
+			log.Println(err.Error())
+		}
+	}()
 
 	serverMetrics := make(map[string]metrics.Metrics)
 
@@ -168,7 +179,7 @@ func TestUpdateMetricsOnServer(t *testing.T) {
 			request.Header.Set("Content-Type", "application/json")
 
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(UpdateMetricsOnServer(serverMetrics, serverSettings, mdb))
+			h := http.HandlerFunc(UpdateMetricsOnServer(serverMetrics, serverSettings, conn))
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()
@@ -261,11 +272,17 @@ func TestGetMetricFromServer(t *testing.T) {
 }
 
 func TestCheckDatabaseConn(t *testing.T) {
-	mdb := metricdb.CreateConnnection(context.Background(), "")
-	if !mdb.IsConnActive() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	conn := metricdb.CreateConnnection(ctx, "")
+	if conn.IsConnClose() {
 		return
 	}
-	defer mdb.CloseConnection()
+	defer func() {
+		if err := conn.CloseConnection(ctx); err != nil {
+			log.Println(err.Error())
+		}
+	}()
 
 	type want struct {
 		code int
@@ -287,7 +304,7 @@ func TestCheckDatabaseConn(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, "/ping", nil)
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(CheckDatabaseConn(mdb))
+			h := http.HandlerFunc(CheckDatabaseConn(conn))
 			h.ServeHTTP(w, r)
 			result := w.Result()
 			result.Body.Close()

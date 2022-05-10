@@ -207,8 +207,10 @@ func GetAllMetricsFromServer(serverMetrics []metrics.Metrics) http.HandlerFunc {
 	}
 }
 
-func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettings settings.SysSettings, mdb metricdb.Metricdb) http.HandlerFunc {
+func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettings settings.SysSettings, conn *metricdb.Connection) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithCancel(r.Context())
+		defer cancel()
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
 			return
@@ -264,13 +266,13 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettin
 			serverMetrics[requestMetric.ID] = m
 		}
 
-		if mdb.IsConnActive() {
-			connCtx, cancel := context.WithTimeout(mdb.GetContext(), 5*time.Second)
+		if !conn.IsConnClose() {
+			connCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 			switch m.MType {
 			case metrics.CounterType:
-				_ = mdb.Conn.QueryRow(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, *m.Delta, nil)
+				_ = conn.QueryRow(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, *m.Delta, nil)
 			case metrics.GaugeType:
-				_ = mdb.Conn.QueryRow(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, nil, *m.Value)
+				_ = conn.QueryRow(connCtx, "insert into metrics values ($1, $2, $3, $4)", m.ID, m.MType, nil, *m.Value)
 			}
 			cancel()
 		}
@@ -279,8 +281,10 @@ func UpdateMetricOnServer(serverMetrics map[string]metrics.Metrics, serverSettin
 	}
 }
 
-func UpdateMetricsOnServer(serverMetrics map[string]metrics.Metrics, serverSettings settings.SysSettings, mdb metricdb.Metricdb) http.HandlerFunc {
+func UpdateMetricsOnServer(serverMetrics map[string]metrics.Metrics, serverSettings settings.SysSettings, conn *metricdb.Connection) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(rw, "", http.StatusBadRequest)
 			return
@@ -299,11 +303,9 @@ func UpdateMetricsOnServer(serverMetrics map[string]metrics.Metrics, serverSetti
 		r.Body.Close()
 
 		var tx pgx.Tx
-		if mdb.IsConnActive() {
+		if !conn.IsConnClose() {
 			var err error
-			ctx, cancel := context.WithCancel(mdb.GetContext())
-			defer cancel()
-			tx, err = mdb.Conn.Begin(ctx)
+			tx, err = conn.Begin(ctx)
 			if err != nil {
 				http.Error(rw, err.Error(), http.StatusInternalServerError)
 				return
@@ -350,8 +352,8 @@ func UpdateMetricsOnServer(serverMetrics map[string]metrics.Metrics, serverSetti
 				serverMetrics[requestedMetric.ID] = m
 			}
 
-			if mdb.IsConnActive() {
-				connCtx, connCancel := context.WithTimeout(mdb.GetContext(), 5*time.Second)
+			if !conn.IsConnClose() {
+				connCtx, connCancel := context.WithTimeout(ctx, 5*time.Second)
 				switch m.MType {
 				case metrics.CounterType:
 					log.Printf("Try: metric %v of type %v with value %v", m.ID, m.MType, m.Delta)
@@ -370,8 +372,8 @@ func UpdateMetricsOnServer(serverMetrics map[string]metrics.Metrics, serverSetti
 			}
 		}
 
-		if mdb.IsConnActive() {
-			if err := tx.Commit(mdb.GetContext()); err != nil {
+		if !conn.IsConnClose() {
+			if err := tx.Commit(ctx); err != nil {
 				http.Error(rw, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -437,15 +439,17 @@ func getMetricFromRequestBody(m *metrics.Metrics, r *http.Request) error {
 	return nil
 }
 
-func CheckDatabaseConn(conn metricdb.Metricdb) http.HandlerFunc {
+func CheckDatabaseConn(conn *metricdb.Connection) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		log.Println("Content-Type: ", r.Header.Get("Content-Type"))
+		ctx, cancel := context.WithCancel(r.Context())
+		defer cancel()
 
-		if !conn.IsConnActive() {
+		if conn.IsConnClose() {
 			http.Error(rw, "", http.StatusInternalServerError)
 			return
 		}
-		if err := conn.Ping(); err != nil {
+		if err := conn.Ping(ctx); err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
