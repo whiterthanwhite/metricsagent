@@ -55,32 +55,31 @@ func startSaveMetricsOnFile(ctx context.Context, serverMetrics map[string]metric
 	}
 }
 
-func createMetricTable(mdb metricdb.Metricdb) {
-	if !mdb.IsConnActive() {
+func createMetricTable(ctx context.Context, conn *metricdb.Connection) {
+	if conn.IsConnClose() {
 		return
 	}
 
-	var tableExists bool
-
-	ctx, cancel := context.WithTimeout(mdb.GetContext(), 5*time.Second)
-
-	row := mdb.Conn.QueryRow(ctx, `select exists (select from information_schema.tables where table_name = 'metrics');`)
-	cancel()
-	if err := row.Scan(&tableExists); err != nil {
+	var exists bool
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	row := conn.QueryRow(ctx, "select exists (select from information_schema.tables where table_name = 'metrics');")
+	defer cancel()
+	if err := row.Scan(&exists); err != nil {
 		log.Println(err.Error())
 		return
 	}
 
-	if tableExists {
-		return
+	if !exists {
+		ctx, cancel2 := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel2()
+		row = conn.QueryRow(ctx, "CREATE TABLE metrics (id varchar(50) not null, type varchar(50) not null, delta int, value double precision);")
+		if err := row.Scan(); err != nil {
+			log.Println(err.Error())
+			return
+		}
+
+		log.Println("table created")
 	}
-
-	ctx, cancel = context.WithTimeout(mdb.GetContext(), 5*time.Second)
-
-	_ = mdb.Conn.QueryRow(ctx, "CREATE TABLE metrics (id varchar(50) not null, type varchar(50) not null, delta int, value double precision);")
-	cancel()
-
-	log.Println("table created")
 }
 
 func main() {
@@ -115,9 +114,13 @@ func main() {
 	defer storage.SaveMetricsOnFile(newServerMetrics, ServerSettings)
 	go startSaveMetricsOnFile(ctx, newServerMetrics)
 
-	mdb := metricdb.CreateConnnection(ctx, ServerSettings.MetricDBAdress)
-	defer mdb.CloseConnection()
-	createMetricTable(mdb)
+	conn := metricdb.CreateConnnection(ctx, ServerSettings.MetricDBAdress)
+	defer func() {
+		if err := conn.CloseConnection(ctx); err != nil {
+			log.Println(err.Error())
+		}
+	}()
+	createMetricTable(ctx, conn)
 
 	r := chi.NewRouter()
 
@@ -125,12 +128,12 @@ func main() {
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlers.GetAllMetricsFromFile(oldServerMetrics, newServerMetrics))
 		r.Route("/update", func(r chi.Router) {
-			r.Post("/", handlers.UpdateMetricOnServer(newServerMetrics, ServerSettings, mdb))
+			r.Post("/", handlers.UpdateMetricOnServer(newServerMetrics, ServerSettings, conn))
 			r.Post("/{metricType}/{metricName}/{metricValue}",
 				handlers.UpdateMetricHandler(oldServerMetrics, newServerMetrics))
 		})
 		r.Route("/updates", func(r chi.Router) {
-			r.Post("/", handlers.UpdateMetricsOnServer(newServerMetrics, ServerSettings, mdb))
+			r.Post("/", handlers.UpdateMetricsOnServer(newServerMetrics, ServerSettings, conn))
 		})
 		r.Route("/value", func(r chi.Router) {
 			r.Post("/", handlers.GetMetricFromServer(newServerMetrics, ServerSettings))
@@ -138,7 +141,7 @@ func main() {
 				handlers.GetMetricValueFromServer(oldServerMetrics))
 		})
 		r.Route("/ping", func(r chi.Router) {
-			r.Get("/", handlers.CheckDatabaseConn(mdb))
+			r.Get("/", handlers.CheckDatabaseConn(conn))
 		})
 		// r.Post("/", handlers.GetAllMetricsFromServer(serverMetrics))
 	})

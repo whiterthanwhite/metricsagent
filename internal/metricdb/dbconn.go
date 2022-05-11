@@ -7,39 +7,43 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-type Metricdb struct {
-	Conn *pgx.Conn
-	ctx  context.Context
+type Connection struct {
+	conn *pgx.Conn
 }
 
-func CreateConnnection(ctx context.Context, connStr string) Metricdb {
-	mdb := Metricdb{
-		ctx: ctx,
-	}
+func CreateConnnection(ctx context.Context, connStr string) *Connection {
+	c := Connection{}
 	var err error
 
-	mdb.Conn, err = pgx.Connect(mdb.ctx, connStr)
+	c.conn, err = pgx.Connect(ctx, connStr)
 	if err != nil {
 		log.Printf("Unable to connect to database: %v\n", err)
 	}
-	return mdb
+	return &c
 }
 
-func (mdb *Metricdb) GetContext() context.Context {
-	return mdb.ctx
+func (c *Connection) Begin(ctx context.Context) (pgx.Tx, error) {
+	return c.conn.Begin(ctx)
 }
 
-func (mdb *Metricdb) Ping() error {
-	if err := mdb.Conn.Ping(mdb.ctx); err != nil {
-		return err
+func (c *Connection) QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row {
+	var row pgx.Row
+	if len(args) > 0 {
+		row = c.conn.QueryRow(ctx, sql, args...)
+	} else {
+		row = c.conn.QueryRow(ctx, sql)
 	}
-	return nil
+	return row
 }
 
-func (mdb *Metricdb) CloseConnection() {
-	mdb.Conn.Close(mdb.ctx)
+func (c *Connection) Ping(ctx context.Context) error {
+	return c.conn.Ping(ctx)
 }
 
-func (mdb *Metricdb) IsConnActive() bool {
-	return mdb.Conn != nil
+func (c *Connection) CloseConnection(ctx context.Context) error {
+	return c.conn.Close(ctx)
+}
+
+func (c *Connection) IsConnClose() bool {
+	return (c.conn == nil) || c.conn.IsClosed()
 }
