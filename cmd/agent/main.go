@@ -146,7 +146,7 @@ func setUpHTTPClient(agentClient *http.Client) {
 	agentClient.Timeout = 0 * time.Second
 }
 
-func enableTerminationSignals() {
+func enableTerminationSignals(cancel context.CancelFunc) {
 	signalChannel := make(chan os.Signal, 1)
 	signal.Notify(
 		signalChannel,
@@ -166,6 +166,7 @@ func enableTerminationSignals() {
 				exitChan <- 0
 			case syscall.SIGINT:
 				log.Println("Signal interrupt triggered.")
+				cancel()
 			}
 		}
 	}()
@@ -282,15 +283,13 @@ func main() {
 	}
 	log.Println(AgentSettings)
 
-	go enableTerminationSignals()
-
 	httpClient := &http.Client{}
 	setUpHTTPClient(httpClient)
 
 	agentMetrics := metrics.GetAllMetrics()
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
-	defer cancel()
+	ctx, cancel := context.WithCancel(context.Background())
 
+	go enableTerminationSignals(cancel)
 	go UpdateStandardMetrics(agentMetrics, ctx)
 	go UpdateAdditionalMetrics(agentMetrics, ctx)
 	go MainSendFunction(agentMetrics, httpClient, ctx)
