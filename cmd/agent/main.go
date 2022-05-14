@@ -153,25 +153,16 @@ func enableTerminationSignals(cancel context.CancelFunc) {
 		syscall.SIGTERM,
 		syscall.SIGQUIT,
 		syscall.SIGINT)
-	exitChan := make(chan int)
-	go func() {
-		for {
-			s := <-signalChannel
-			switch s {
-			case syscall.SIGTERM:
-				log.Println("Signal terminte triggered.")
-				exitChan <- 0
-			case syscall.SIGQUIT:
-				log.Println("Signal quit triggered.")
-				exitChan <- 0
-			case syscall.SIGINT:
-				log.Println("Signal interrupt triggered.")
-				cancel()
-			}
-		}
-	}()
-	exitCode := <-exitChan
-	os.Exit(exitCode)
+	s := <-signalChannel
+	switch s {
+	case syscall.SIGTERM:
+		log.Println("Signal terminate triggered.")
+	case syscall.SIGQUIT:
+		log.Println("Signal quit triggered.")
+	case syscall.SIGINT:
+		log.Println("Signal interrupt triggered.")
+	}
+	cancel()
 }
 
 func UpdateStandardMetrics(agentMetrics map[string]metrics.Metric, ctx context.Context) {
