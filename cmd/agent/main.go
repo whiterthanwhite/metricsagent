@@ -153,16 +153,17 @@ func enableTerminationSignals(cancel context.CancelFunc) {
 		syscall.SIGTERM,
 		syscall.SIGQUIT,
 		syscall.SIGINT)
-	s := <-signalChannel
-	switch s {
-	case syscall.SIGTERM:
-		log.Println("Signal terminate triggered.")
-	case syscall.SIGQUIT:
-		log.Println("Signal quit triggered.")
-	case syscall.SIGINT:
-		log.Println("Signal interrupt triggered.")
+	process := true
+	for process {
+		switch s := <-signalChannel; s {
+		case syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT:
+			log.Printf("Signal %s triggered.", s.String())
+			process = false
+			cancel()
+		default:
+			log.Println("Unknown signal.")
+		}
 	}
-	cancel()
 }
 
 func UpdateStandardMetrics(agentMetrics map[string]metrics.Metric, ctx context.Context) {
@@ -171,6 +172,7 @@ func UpdateStandardMetrics(agentMetrics map[string]metrics.Metric, ctx context.C
 
 	pollCount := agentMetrics["PollCount"]
 	randomValue := agentMetrics["RandomValue"]
+	metricsDescriptions := metrics.GetStandardMetrics()
 	for processing {
 		rand.Seed(time.Now().Unix())
 		randomValue.UpdateValue(rand.Float64())
@@ -179,17 +181,11 @@ func UpdateStandardMetrics(agentMetrics map[string]metrics.Metric, ctx context.C
 		select {
 		case <-pollTicker.C:
 			for _, m := range agentMetrics {
-				currMetric := m.GetName()
-				switch currMetric {
-				case "Alloc", "BuckHashSys", "Frees", "GCCPUFraction",
-					"OtherSys", "GCSys", "HeapAlloc", "HeapIdle", "HeapInuse",
-					"HeapObjects", "HeapReleased", "HeapSys", "LastGC",
-					"Lookups", "MCacheInuse", "MCacheSys", "MSpanInuse",
-					"MSpanSys", "Mallocs", "NextGC", "NumForcedGC", "NumGC",
-					"PauseTotalNs", "StackInuse", "StackSys", "Sys",
-					"TotalAlloc":
-					m.UpdateValue(randomValue.GetValue())
-					pollCount.UpdateValue(1)
+				if md, ok := metricsDescriptions[m.GetName()]; ok {
+					if md.UpdateType == metrics.RandomValue {
+						m.UpdateValue(randomValue.GetValue())
+						pollCount.UpdateValue(1)
+					}
 				}
 			}
 		case <-ctx.Done():
